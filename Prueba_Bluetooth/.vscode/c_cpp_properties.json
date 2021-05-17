@@ -8,8 +8,8 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido/include",
-                "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido/src",
+                "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Bluetooth/include",
+                "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Bluetooth/src",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
@@ -107,8 +107,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido/include",
-                    "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido/src",
+                    "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Bluetooth/include",
+                    "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Bluetooth/src",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
