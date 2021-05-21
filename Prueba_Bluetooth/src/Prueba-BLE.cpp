@@ -1,6 +1,6 @@
 #include "Arduino.h"
 // Alta modificación del ejemplo bt_discovery de espressif
-#include "esp_bt.h"
+/*#include "esp_bt.h"
 #include "esp_bt_main.h"
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
@@ -30,35 +30,31 @@ static app_gap_cb_t m_dev_info;
 static EventGroupHandle_t evento_envio_bt;
 const int ESCANEO_BT_ACABADO = BIT0;
 
+void printDeviceAddress_2(uint8_t rssi) {
+ 
+  for (int i = 0; i < 6; i++) {
+ 
+    char str[3];
+ 
+    sprintf(str, "%02X", rssi);
+    Serial.print(str);
+ 
+    if (i < 5){
+      Serial.print(":");
+    }
+ 
+  }
+  Serial.println("\n");
+}
+
 void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param){
     app_gap_cb_t *p_dev = &m_dev_info;
-    int32_t rssi = 0;
     esp_bt_gap_dev_prop_t *p;
-
-    switch (event) {
-      case ESP_BT_GAP_DISC_RES_EVT: {
-        for (int i = 0; i < param->disc_res.num_prop; i++) {
-          p = param->disc_res.prop + i;
-          rssi = *(int8_t *)(p->val);
-        }
-			break;
-		}
-		case ESP_BT_GAP_DISC_STATE_CHANGED_EVT: {
-			if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STOPPED) {
-				printf( "Device discovery stopped.\n");
-
-				xEventGroupSetBits(evento_envio_bt, ESCANEO_BT_ACABADO);
-				p_dev->state = APP_GAP_STATE_DEVICE_DISCOVERING;
-				esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
-			} else if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STARTED) {
-				printf( "Discovery started.\n");
-			}
-			break;
-		}
-		default: {
-			printf("Event: %d\n", event);
-			break;
-		}
+    
+    for (int i = 0; i < param->disc_res.num_prop; i++) {
+      p = param->disc_res.prop + i;
+      p_dev->rssi = *(int8_t *)(p->val);
+      printDeviceAddress_2(p_dev->rssi);
     }
     return;
 }
@@ -117,13 +113,61 @@ void printDeviceAddress() {
     }
  
   }
+  Serial.println("\n");
 }
 
 void setup() {
   Serial.begin(115200);
+  Serial.println("Prueba 1");
+  initBluetooth();
+  printDeviceAddress();
+  Serial.println("Prueba 2");
   bt_inicializar();
   bt_escaneo();
-  printDeviceAddress();
 }
- 
+
 void loop() {}
+
+*/
+
+/*
+   Based on Neil Kolban example for IDF: https://github.com/nkolban/esp32-snippets/blob/master/cpp_utils/tests/BLE%20Tests/SampleScan.cpp
+   Ported to Arduino ESP32 by Evandro Copercini
+*/
+
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEScan.h>
+#include <BLEAdvertisedDevice.h>
+
+int scanTime = 5; //In seconds
+BLEScan* pBLEScan;
+
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+    void onResult(BLEAdvertisedDevice advertisedDevice) {
+      Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
+    }
+};
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Scanning...");
+
+  BLEDevice::init("");
+  pBLEScan = BLEDevice::getScan(); //create new scan
+  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+  pBLEScan->setActiveScan(true); //active scan uses more power, but get results faster
+  pBLEScan->setInterval(100);
+  pBLEScan->setWindow(99);  // less or equal setInterval value
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
+  Serial.print("Devices found: ");
+  Serial.println(foundDevices.getCount());
+  Serial.println("Scan done!");
+  pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+  delay(2000);
+}
+
