@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include <onlow.h>
+#include <offlow.h>
+#include <onhigh.h>
 #include <1965FordMustangV8start.h>
-#include <1965FordMustangV8idle.h>
 #include <1965FordMustangV8knock.h>
 #include <CarHorn.h>
 #include <door.h>
@@ -30,7 +31,21 @@ void sonidoEncendido(){
   }
 }
 
+void sonidoAceleraVelocidad(){
+  for (int i = 0; i < 62335; ++i){
+      dacWrite(26, constrain(acelera[i]*128/100+128,0,255));
+      delayMicroseconds(38); // ((1/22050)*1000000) - 7
+  }
+}
+
 void sonidoConstanteVelocidad(){
+  for (int i = 0; i < 19583; ++i){
+      dacWrite(26, constrain(constante[i]*128/100+128,0,255));
+      delayMicroseconds(38); // ((1/22050)*1000000) - 7
+  }
+}
+
+void sonidoDesaceleraVelocidad(){
   for (int i = 0; i < 37375; ++i){
       dacWrite(26, constrain(revSamples[i]*128/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
@@ -57,17 +72,34 @@ void setup() {
 
 void loop() { 
 
-  if (encender == 0){
+  if (encender == 1){
     aperturaPuerta();
     delay(1000);
     sonidoEncendido();
     delay(100);
     sonidoBocina();
     delay(100);
-    sonidoConstanteVelocidad();
+    sonidoAceleraVelocidad();
    // marchaAtras();
   
     encender = encender + 1;
+  }
+  else if (encender == 2){
+    sonidoAceleraVelocidad();
+    sonidoConstanteVelocidad();
+    sonidoConstanteVelocidad();
+    sonidoConstanteVelocidad();
+    sonidoDesaceleraVelocidad();
+    sonidoConstanteVelocidad();
+    sonidoConstanteVelocidad();
+    sonidoConstanteVelocidad();    
+  }
+
+  if (bocina == 1) {
+    sonidoBocina();
+    delay(50);
+    sonidoBocina();
+    bocina = 0;
   }
   /*for (int i = 65024; i < 114432; ++i){
     dacWrite(26, constrain(startSamples[i]*100/100+128,0,255));
