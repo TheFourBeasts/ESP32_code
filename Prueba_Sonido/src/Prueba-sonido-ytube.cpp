@@ -32,21 +32,21 @@ void sonidoEncendido(){
 }
 
 void sonidoAceleraVelocidad(){
-  for (int i = 0; i < 62335; ++i){
+  for (int i = 0; i < 19583/*62335*/; ++i){
       dacWrite(26, constrain(acelera[i]*128/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
 
-void sonidoConstanteVelocidad(){
+void sonidoDesaceleraVelocidad(){
   for (int i = 0; i < 19583; ++i){
       dacWrite(26, constrain(constante[i]*128/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
 
-void sonidoDesaceleraVelocidad(){
-  for (int i = 0; i < 37375; ++i){
+void sonidoConstanteVelocidad(){
+  for (int i = 0; i < 19583/*37375*/; ++i){
       dacWrite(26, constrain(revSamples[i]*128/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
@@ -67,6 +67,7 @@ void sonidoBocina(){
 }
 
 void setup() {
+encender = 1;
 }
 
 
@@ -79,7 +80,6 @@ void loop() {
     delay(100);
     sonidoBocina();
     delay(100);
-    sonidoAceleraVelocidad();
    // marchaAtras();
   
     encender = encender + 1;
