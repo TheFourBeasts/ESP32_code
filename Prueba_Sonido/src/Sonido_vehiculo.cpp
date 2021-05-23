@@ -7,9 +7,52 @@
 #include <CarHorn.h>
 #include <door.h>
 #include <TruckReversingBeep.h>
+#include "soc/rtc_wdt.h"
+#include "Arduino.h"
+#include <WiFi.h>
+#include "PubSubClient.h"
+#include "FreeRTOS.h"
 
-int encender = 0;
-int bocina = 0;
+//******Variables de Sonido*****
+
+volatile int encender = 0;
+volatile int bocina = 0;
+
+//******Variables de velocimetro*****
+
+//_CalculateLastLapTime cllt;
+volatile float velocidad = 0.00;
+volatile float velocidad_ant = 0.00;
+volatile int cont = 0;
+volatile unsigned timeLap = 490;
+volatile unsigned long startTimeLap = 0;
+volatile unsigned long endTimeLap = 2000;
+
+uint32_t inputPin = 36;
+
+//**************************************
+
+//***Variables y constantes de comunicacion********
+const char *ssid = "WiFi-Arnet-nf4d";
+const char *password = "UFYMAUAWKS";
+const char *mqtt_server = "node02.myqtthub.com";
+const int mqtt_port = 1883;
+const char *client_id = "lucas.capponi@gmail.com";
+const char *client_user = "lucas_vehiculo";
+const char *client_pass = "vehiculo";
+const char *root_topic_subscribe = "esp/contacto";
+//const char *root_topic_publish = "esp/test";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+TaskHandle_t TareaWiFi;
+//*****************************************************
+
+/*******************************************
+ *  Funcion de interrucion para obtener
+ *  la velociad.
+ * *****************************************/
 
 void sonidoMarchaAtras(){
   for (int i = 0; i < 22049; ++i){
@@ -66,8 +109,54 @@ void sonidoBocina(){
   }
 }
 
+void callback(char *topic, byte *payload, unsigned int length) {
+  String incoming = "";
+  Serial.print("Mensaje recibido desde -> ");
+  Serial.print(topic);
+  Serial.println("");
+  for (int i = 0; i < length; i++)
+  {
+    incoming += (char)payload[i];
+  }
+  incoming.trim();
+  Serial.println("Mensaje -> " + incoming);
+}
+
+void reconnect() {
+    while (!client.connected()) {
+        Serial.print("Intentando conexión Mqtt...");
+        // Intentamos conectar
+        if (client.connect(client_id, client_user,client_pass) ){
+            Serial.println("Conectado!");
+            // Nos suscribimos
+            if(client.subscribe(root_topic_subscribe)){
+                Serial.println("Suscripcion ok");
+            }else{
+                Serial.println("fallo Suscripción");
+            }
+        } else {
+            Serial.print("falló :( con error -> ");
+            Serial.print(client.state());
+            Serial.println(" Intentamos de nuevo en 5 segundos");
+            delay(5000);
+        }
+    }
+}
+
+void setup_wifi(void* pvParameters) {
+  // Nos conectamos a nuestra red Wifi
+  Serial.println();
+  Serial.print("Conectando a ssid: ");
+  Serial.println(ssid);
+  Serial.println(xPortGetCoreID());
+  WiFi.mode(WIFI_STA);
+  Serial.println(WiFi.status());
+  WiFi.begin(ssid, password);
+}
+
 void setup() {
-encender = 1;
+  Serial.begin(115200);
+  encender = 1;
 }
 
 
