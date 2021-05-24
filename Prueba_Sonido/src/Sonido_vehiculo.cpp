@@ -8,18 +8,16 @@
 #include <door.h>
 #include <TruckReversingBeep.h>
 #include "soc/rtc_wdt.h"
-#include "Arduino.h"
 #include <WiFi.h>
 #include "PubSubClient.h"
 #include "FreeRTOS.h"
+#include <RedWifi.h>
 
 //******Variables de Sonido*****
-
 volatile int encender = 0;
 volatile int bocina = 0;
 
 //******Variables de velocimetro*****
-
 //_CalculateLastLapTime cllt;
 volatile float velocidad = 0.00;
 volatile float velocidad_ant = 0.00;
@@ -33,13 +31,14 @@ uint32_t inputPin = 36;
 //**************************************
 
 //***Variables y constantes de comunicacion********
-const char *ssid = "WiFi-Arnet-nf4d";
-const char *password = "UFYMAUAWKS";
-const char *mqtt_server = "node02.myqtthub.com";
-const int mqtt_port = 1883;
-const char *client_id = "lucas.capponi@gmail.com";
-const char *client_user = "lucas_vehiculo";
-const char *client_pass = "vehiculo";
+// Wi Fi
+RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
+// Broker
+const char* mqtt_server= "zc482089.en.emqx.cloud";
+const int mqtt_port = 12176;
+const char* client_id = "Luciano"; //Completar con cualquier nombre
+const char* client_user = "vehiculo123";
+const char* client_pass = "emqxd123";
 const char *root_topic_subscribe = "esp/contacto";
 //const char *root_topic_publish = "esp/test";
 
@@ -49,10 +48,9 @@ PubSubClient client(espClient);
 TaskHandle_t TareaWiFi;
 //*****************************************************
 
-/*******************************************
- *  Funcion de interrucion para obtener
- *  la velociad.
- * *****************************************/
+/****************************************************
+ *  Funcion de interrucion para obtener la velociad.
+ * **************************************************/
 
 void sonidoMarchaAtras(){
   for (int i = 0; i < 22049; ++i){
@@ -123,44 +121,39 @@ void callback(char *topic, byte *payload, unsigned int length) {
 }
 
 void reconnect() {
-    while (!client.connected()) {
-        Serial.print("Intentando conexión Mqtt...");
-        // Intentamos conectar
-        if (client.connect(client_id, client_user,client_pass) ){
-            Serial.println("Conectado!");
-            // Nos suscribimos
-            if(client.subscribe(root_topic_subscribe)){
-                Serial.println("Suscripcion ok");
-            }else{
-                Serial.println("fallo Suscripción");
-            }
-        } else {
-            Serial.print("falló :( con error -> ");
-            Serial.print(client.state());
-            Serial.println(" Intentamos de nuevo en 5 segundos");
-            delay(5000);
-        }
-    }
-}
-
-void setup_wifi(void* pvParameters) {
-  // Nos conectamos a nuestra red Wifi
-  Serial.println();
-  Serial.print("Conectando a ssid: ");
-  Serial.println(ssid);
-  Serial.println(xPortGetCoreID());
-  WiFi.mode(WIFI_STA);
-  Serial.println(WiFi.status());
-  WiFi.begin(ssid, password);
+	while (!client.connected()) {
+		Serial.print("Intentando conexión Mqtt...");
+		// Intentamos conectar
+		if (client.connect(client_id, client_user,client_pass) ){
+			Serial.println("Conectado!");
+			// Nos suscribimos a todos los topicos del esp
+			if(client.subscribe("esp/#")){
+				Serial.println("Suscripcion ok");
+			}else{
+				Serial.println("fallo Suscripciión");
+			}
+		} else {
+			Serial.print("falló :( con error -> ");
+			Serial.print(client.state());
+			Serial.println(" Intentamos de nuevo en 5 segundos");
+			delay(5000);
+		}
+	}
 }
 
 void setup() {
   Serial.begin(115200);
+  wifi->conectar();
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
   encender = 1;
 }
 
 
 void loop() { 
+  if (!client.connected()) {
+    	reconnect();
+  }
 
   if (encender == 1){
     aperturaPuerta();
@@ -174,36 +167,20 @@ void loop() {
     encender = encender + 1;
   }
   else if (encender == 2){
-    sonidoAceleraVelocidad();
-    sonidoConstanteVelocidad();
-    sonidoConstanteVelocidad();
-    sonidoConstanteVelocidad();
-    sonidoDesaceleraVelocidad();
-    sonidoConstanteVelocidad();
-    sonidoConstanteVelocidad();
-    sonidoConstanteVelocidad();    
+    if(velocidad == velocidad_ant && bocina == 0){
+        sonidoConstanteVelocidad();
+    } else if (velocidad >= velocidad_ant && bocina == 0){
+        sonidoAceleraVelocidad();
+    } else if (velocidad <= velocidad_ant && bocina == 0){
+        sonidoDesaceleraVelocidad();
+    } else {
+        sonidoBocina();
+      delay(50);
+      sonidoBocina();
+      bocina = 0;
+    } 
   }
 
-  if (bocina == 1) {
-    sonidoBocina();
-    delay(50);
-    sonidoBocina();
-    bocina = 0;
-  }
-  /*for (int i = 65024; i < 114432; ++i){
-    dacWrite(26, constrain(startSamples[i]*100/100+128,0,255));
-    delayMicroseconds(38); // ((1/22050)*1000000) - 7
-  }*/
-  /*for (int i = 102272; i < 115200; ++i){
-    dacWrite(26, constrain(startSamples[i]*100/100+128,0,255));
-    delayMicroseconds(38); // ((1/22050)*1000000) - 7
-  }
-  for(int i=0;i<3;++i){
-    for (int i = 108800; i < 115328; ++i){
-      dacWrite(26, constrain(startSamples[i]*100/100+128,0,255));
-      delayMicroseconds(38); // ((1/22050)*1000000) - 7
-    }
-  }*/  
   
 }
 
