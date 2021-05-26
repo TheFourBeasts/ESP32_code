@@ -3,7 +3,6 @@
 #include <offlow.h>
 #include <onhigh.h>
 #include <1965FordMustangV8start.h>
-#include <1965FordMustangV8knock.h>
 #include <CarHorn.h>
 #include <door.h>
 #include <TruckReversingBeep.h>
@@ -82,7 +81,7 @@ void sonidoEncendido(){
 
 void sonidoAceleraVelocidad(){
   for (int i = 0; i < 19583/*62335*/; ++i){
-      dacWrite(26, constrain(acelera[i]*128/100+128,0,255));
+      dacWrite(26, constrain(acelera[i]*75/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
@@ -127,10 +126,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
 	Serial.println("Mensaje -> " + incoming);
 
 	if (String(topic).equals("esp/contacto")) {    
-		if(incoming.equals("on")){
+		if(incoming.equals("true")){
 		  encender = 1;
 		}
-		else if(incoming.equals("off")){
+		else if(incoming.equals("false")){
 		  encender = 0;
 		}
 	}
@@ -138,7 +137,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
 		velocidad = incoming.toFloat();
 	}
   if (String(topic).equals("esp/bocina")) {    
-		bocina = incoming.toInt();
+		if(incoming.equals("true")){
+		  bocina = 1;
+		}
+		else if(incoming.equals("false")){
+		  bocina = 0;
+		}
 	}
 }
 
@@ -213,6 +217,8 @@ void loop() {
   }
 
   if (encender == 1){
+    //marchaAtras();
+    //delay(1000);
     //aperturaPuerta();
     //delay(1000);
     sonidoEncendido();
@@ -236,7 +242,6 @@ void loop() {
       velocidad_ant = velocidad;
     } else {
       sonidoBocina();
-      bocina = 0;
     } 
   }
 
