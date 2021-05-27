@@ -240,9 +240,11 @@ void loop() {
       sonidoDesaceleraVelocidad();
       sonidoDesaceleraVelocidad();
       velocidad_ant = velocidad;
-    } else {
-      sonidoBocina();
     } 
+      
+  }
+  if(bocina == 1){
+    sonidoBocina();
   }
 
   client.loop();
