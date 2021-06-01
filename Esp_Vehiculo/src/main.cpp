@@ -59,15 +59,16 @@ void setup() {
     client.setCallback(callback);
 }
 
-void loop() {
-	if (!client.connected()) {
-    	reconnect();
-  	}
+void loop(){
+	if(!client.connected()){
+		reconnect();
+	}
 
-    controladorDeEntradas->controlar(&topico_publicacion,&mensaje_publicacion);
-	if (client.connected()){
+	controladorDeEntradas->controlar(&topico_publicacion,&mensaje_publicacion);
+	if (client.connected() && !(mensaje_publicacion.equals(""))){
     	client.publish(topico_publicacion.c_str(),mensaje_publicacion.c_str());
 	}
+	mensaje_publicacion="";
 
 	client.loop();
 }
