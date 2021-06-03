@@ -1,4 +1,5 @@
 #include "ControladorDeSalidas.h"
+#include <regex.h>
 
 ControladorDeSalidas::ControladorDeSalidas(){
     posicion=14;
@@ -16,10 +17,13 @@ ControladorDeSalidas::ControladorDeSalidas(){
     pinMode(reflector, OUTPUT);
     pinMode(contacto, OUTPUT);
     pinMode(puertas, OUTPUT);
+
+    //Desactivo relé
+    digitalWrite(contacto,HIGH);
 }
 
 void ControladorDeSalidas::encender_apagar(String mensaje, int pin){
-    if(mensaje.equals("on")){
+    if(mensaje.equals("true")){
         digitalWrite(pin,HIGH);
     } else {
         digitalWrite(pin,LOW);
@@ -27,6 +31,7 @@ void ControladorDeSalidas::encender_apagar(String mensaje, int pin){
 }
 
 void ControladorDeSalidas::controlar_luces(String topico, String mensaje){
+    Serial.println(topico);
     if(topico.equals("esp/luces/posicion")){
         encender_apagar(mensaje, posicion);
 
@@ -44,24 +49,25 @@ void ControladorDeSalidas::controlar_luces(String topico, String mensaje){
     }         
 }
 
-void ControladorDeSalidas::controlar_contacto(String mensaje){
-    encender_apagar(mensaje,contacto);
-}
-
-void ControladorDeSalidas::controlar_puertas(String mensaje){
-    encender_apagar(mensaje,puertas);
+void ControladorDeSalidas::encender_apagar_rele(String mensaje, int pin){
+    if(mensaje.equals("true")){
+        digitalWrite(pin,LOW);
+    } else {
+        digitalWrite(pin,HIGH);
+    }
 }
 
 void ControladorDeSalidas::controlar(char* topico, String mensaje){
     String topic = String(topico);
 
-    if(topic.equals("^esp/luces")){
+    if(topic.substring(0,9).equals("esp/luces")){
         controlar_luces(topic,mensaje);
 
-    } else if (topic.equals("^esp/contacto")){
-        controlar_contacto(mensaje);
+    } else if (topic.equals("esp/contacto")){
+        encender_apagar_rele(mensaje, contacto);
+        encender_apagar(mensaje, posicion);
 
-    } else if (topic.equals("^esp/puertas")){
-        controlar_puertas(mensaje);
+    } else if (topic.equals("esp/puertas")){
+        encender_apagar_rele(mensaje, puertas);
     }
 }

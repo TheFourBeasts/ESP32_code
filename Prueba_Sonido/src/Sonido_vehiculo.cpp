@@ -2,7 +2,7 @@
 #include <onlow.h>
 #include <offlow.h>
 #include <onhigh.h>
-#include <1965FordMustangV8start.h>
+#include <JeepGrandCherokeeTrackhawkStart.h>
 #include <CarHorn.h>
 #include <door.h>
 #include <TruckReversingBeep.h>
@@ -20,8 +20,8 @@ volatile int bocina = 0;
 
 //******Variables de velocimetro*****
 //_CalculateLastLapTime cllt;
-volatile float velocidad = 0.00;
-volatile float velocidad_ant = 0.00;
+volatile float velocidad = 10.00;
+volatile float velocidad_ant = 10.00;
 volatile int cont = 0;
 volatile unsigned timeLap = 490;
 volatile unsigned long startTimeLap = 0;
@@ -73,7 +73,7 @@ void marchaAtras(){
 }
 
 void sonidoEncendido(){
-  for (int i = 0; i < 155393; ++i){
+  for (int i = 0; i < 62447; ++i){
     dacWrite(26, constrain(startSamples[i]*100/100+128,0,255));
     delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
@@ -95,7 +95,7 @@ void sonidoDesaceleraVelocidad(){
 
 void sonidoConstanteVelocidad(){
   for (int i = 0; i < 19583/*37375*/; ++i){
-      dacWrite(26, constrain(revSamples[i]*128/100+128,0,255));
+      dacWrite(26, constrain(revSamples[i]*50/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }

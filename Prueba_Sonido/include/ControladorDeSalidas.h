@@ -14,8 +14,7 @@ class ControladorDeSalidas
     int contacto;
     int puertas;
     void controlar_luces(String topico, String mensaje);
-    void controlar_contacto(String mensaje);
-    void controlar_puertas(String mensaje);
     void encender_apagar(String mensaje, int pin);
+    void encender_apagar_rele(String mensaje, int pin);
 };
 
