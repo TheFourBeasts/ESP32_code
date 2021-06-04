@@ -8,9 +8,11 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Bluetooth/include",
-                "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Bluetooth/src",
+                "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido_velocimetro/include",
+                "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido_velocimetro/src",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
+                "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido_velocimetro/.pio/libdeps/esp32dev/PubSubClient/src",
+                "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
@@ -97,7 +99,6 @@
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/Ticker/src",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
@@ -107,9 +108,11 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Bluetooth/include",
-                    "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Bluetooth/src",
+                    "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido_velocimetro/include",
+                    "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido_velocimetro/src",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
+                    "C:/CrazyProgram/CSCGRUPO2/ESP32_code/Prueba_Sonido_velocimetro/.pio/libdeps/esp32dev/PubSubClient/src",
+                    "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
@@ -196,7 +199,6 @@
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/Ticker/src",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                    "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                     "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
@@ -207,6 +209,7 @@
             "defines": [
                 "PLATFORMIO=50101",
                 "ARDUINO_ESP32_DEV",
+                "CONFIG_FREERTOS_UNICORE=1-",
                 "ESP32",
                 "ESP_PLATFORM",
                 "F_CPU=240000000L",

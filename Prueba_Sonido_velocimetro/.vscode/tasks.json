@@ -7,14 +7,6 @@
             "label": "echo",
             "type": "shell",
             "command": "echo Hello"
-        },
-        {
-            "type": "PlatformIO",
-            "task": "Monitor (esp32dev)",
-            "problemMatcher": [
-                "$platformio"
-            ],
-            "label": "PlatformIO: Monitor (esp32dev)"
         }
     ]
 }

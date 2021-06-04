@@ -6,13 +6,16 @@
 #include <CarHorn.h>
 #include <door.h>
 #include <TruckReversingBeep.h>
-#include "soc/rtc_wdt.h"
 #include <WiFi.h>
 #include "PubSubClient.h"
-#include "FreeRTOS.h"
 #include <RedWifi.h>
-#include <ControladorDeSalidas.h>
-#include <ControladorDeEntradas.h>
+#include "soc/rtc_wdt.h"
+#include "FreeRTOS.h"
+//#include "CalculateLastLapTime.h"
+#define contacto 14
+#define sonido 26
+//#define reflector 19
+#define CONFIG_FREERTOS_UNICORE 0
 
 //******Variables de Sonido*****
 volatile int encender = 0;
@@ -42,74 +45,79 @@ const char* client_id = "Luciano"; //Completar con cualquier nombre
 const char* client_user = "vehiculo123";
 const char* client_pass = "emqxd123";
 const char *root_topic_subscribe = "esp/contacto";
-const char *root_topic_subscribe_2 = "esp/velocidad";
 const char *root_topic_subscribe_3 = "esp/bocina";
-//const char *root_topic_subscribe = "esp/velocidad";
-//const char *root_topic_publish = "esp/test";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-ControladorDeSalidas* controladorDeSalidas = new ControladorDeSalidas();
-ControladorDeEntradas* controladorDeEntradas = new ControladorDeEntradas();
 
 TaskHandle_t TareaWiFi;
-//*****************************************************
 
-/****************************************************
- *  Funcion de interrucion para obtener la velociad.
- * **************************************************/
+/*******************************************
+ *  Funcion de interrucion para obtener
+ *  la velociad.
+ * *****************************************/
+void IRAM_ATTR isr_interruption(){
+  cont++;
+
+  if(cont == 1){
+    startTimeLap = millis();
+  }else if(cont == 2){
+    //endTimeLap = millis();
+    timeLap = millis() - startTimeLap;
+    cont = 0;
+  }
+ 
+  if(timeLap != 0){
+  velocidad = ((PI*0.0007874)*(3600000/timeLap));
+  }
+ 
+}
 
 void sonidoMarchaAtras(){
   for (int i = 0; i < 22049; ++i){
-    dacWrite(26, constrain(reversingSamples[i]*5/100+128,0,255));
+    dacWrite(sonido, constrain(reversingSamples[i]*5/100+128,0,255));
     delayMicroseconds(38); // ((1/22050)*1000000) - 7
-  }
-}
-
-void marchaAtras(){
-  for(int i=0;i<3;++i){
-    sonidoMarchaAtras();
   }
 }
 
 void sonidoEncendido(){
   for (int i = 0; i < 62447; ++i){
-    dacWrite(26, constrain(startSamples[i]*100/100+128,0,255));
+    dacWrite(sonido, constrain(startSamples[i]*100/100+128,0,255));
     delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
 
 void sonidoAceleraVelocidad(){
   for (int i = 0; i < 19583/*62335*/; ++i){
-      dacWrite(26, constrain(acelera[i]*75/100+128,0,255));
+      dacWrite(sonido, constrain(acelera[i]*75/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
 
 void sonidoDesaceleraVelocidad(){
   for (int i = 0; i < 19583; ++i){
-      dacWrite(26, constrain(constante[i]*128/100+128,0,255));
+      dacWrite(sonido, constrain(constante[i]*128/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
 
 void sonidoConstanteVelocidad(){
   for (int i = 0; i < 19583/*37375*/; ++i){
-      dacWrite(26, constrain(revSamples[i]*50/100+128,0,255));
+      dacWrite(sonido, constrain(revSamples[i]*50/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
 
-void aperturaPuerta(){
+/*void aperturaPuerta(){
   for (int i = 0; i < 42484; ++i){
-    dacWrite(26, constrain(sound1Samples[i]*100/100+128,0,255));
+    dacWrite(sonido, constrain(sound1Samples[i]*100/100+128,0,255));
     delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
-}
+}*/
 
 void sonidoBocina(){
   for (int i = 0; i < 13513; ++i){
-      dacWrite(26, constrain(hornSamples[i]*100/100+128,0,255));
+      dacWrite(sonido, constrain(hornSamples[i]*100/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
@@ -128,9 +136,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
 	if (String(topic).equals("esp/contacto")) {    
 		if(incoming.equals("true")){
 		  encender = 1;
+      digitalWrite(contacto, HIGH);
 		}
 		else if(incoming.equals("false")){
 		  encender = 0;
+      digitalWrite(contacto, LOW);
 		}
 	}
   if (String(topic).equals("esp/velocidad")) {    
@@ -159,13 +169,6 @@ void reconnect() {
 			}else{
 				Serial.print("fallo Suscripciión -> ");
         Serial.println(root_topic_subscribe);
-			}
-      if(client.subscribe(root_topic_subscribe_2)){
-				Serial.print("Suscripcion ok -> ");
-        Serial.println(root_topic_subscribe_2);
-			}else{
-				Serial.print("fallo Suscripciión -> ");
-        Serial.println(root_topic_subscribe_2);
 			}
       if(client.subscribe(root_topic_subscribe_3)){
 				Serial.print("Suscripcion ok -> ");
@@ -207,6 +210,13 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
+  setCpuFrequencyMhz(40);
+
+  pinMode(36, INPUT);
+  attachInterrupt(digitalPinToInterrupt(36), isr_interruption, RISING);
+   
+  pinMode(contacto,OUTPUT);
+  //pinMode(reflector,OUTPUT);
 }
 
 
@@ -215,16 +225,16 @@ void loop() {
     	reconnect();
   }
 
+  delay(500);
+
+  Serial.print("startTimeLap  ");  Serial.println(startTimeLap);
+  Serial.print("TimeLap  ");  Serial.println(timeLap);
+  Serial.print("endTimeLap  ");  Serial.println(endTimeLap);
+  Serial.print(velocidad);Serial.println(" Km/h ");
+
   if (encender == 1){
-    //marchaAtras();
-    //delay(1000);
-    //aperturaPuerta();
-    //delay(1000);
     sonidoEncendido();
     delay(100);
-    //sonidoBocina();
-    //delay(100);
-   // marchaAtras();
   
     encender = encender + 1;
   }
