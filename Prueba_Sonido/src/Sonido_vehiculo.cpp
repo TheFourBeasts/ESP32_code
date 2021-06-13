@@ -13,15 +13,17 @@
 #include <RedWifi.h>
 #include <ControladorDeSalidas.h>
 #include <ControladorDeEntradas.h>
+#include <1965FordMustangV8idle.h>
 
 //******Variables de Sonido*****
 volatile int encender = 0;
 volatile int bocina = 0;
+volatile int volumen = 0;
 
 //******Variables de velocimetro*****
 //_CalculateLastLapTime cllt;
-volatile float velocidad = 10.00;
-volatile float velocidad_ant = 10.00;
+volatile float velocidad = 0.00;
+volatile float velocidad_ant = 0.00;
 volatile int cont = 0;
 volatile unsigned timeLap = 490;
 volatile unsigned long startTimeLap = 0;
@@ -79,23 +81,31 @@ void sonidoEncendido(){
   }
 }
 
-void sonidoAceleraVelocidad(){
+void sonidoAceleraVelocidad(int auxiliar){
+  volatile int inicio = millis();
   for (int i = 0; i < 19583/*62335*/; ++i){
-      dacWrite(26, constrain(acelera[i]*75/100+128,0,255));
+      dacWrite(26, constrain(acelera[i]*auxiliar/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
+  volatile int fin = millis();
+  Serial.print("Acelera -> ");
+	Serial.println(fin-inicio);
 }
 
-void sonidoDesaceleraVelocidad(){
+void sonidoDesaceleraVelocidad(int auxiliar){
+  volatile int inicio = millis();
   for (int i = 0; i < 19583; ++i){
-      dacWrite(26, constrain(constante[i]*128/100+128,0,255));
+      dacWrite(26, constrain(constante[i]*auxiliar/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
+  volatile int fin = millis();
+  Serial.print("Desacelera -> ");
+	Serial.println(fin-inicio);
 }
 
-void sonidoConstanteVelocidad(){
+void sonidoConstanteVelocidad(int auxiliar){
   for (int i = 0; i < 19583/*37375*/; ++i){
-      dacWrite(26, constrain(revSamples[i]*50/100+128,0,255));
+      dacWrite(26, constrain(revSamples[i]*auxiliar/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
@@ -111,6 +121,23 @@ void sonidoBocina(){
   for (int i = 0; i < 13513; ++i){
       dacWrite(26, constrain(hornSamples[i]*100/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
+  }
+}
+
+void sonidoAutoDetenido(){
+  for (int i = 0; i < 2945; ++i){
+      dacWrite(26, constrain(samples[i]*128/100+128,0,255));
+      delayMicroseconds(38); // ((1/22050)*1000000) - 7
+  }
+}
+
+int obtencionVolumen (float velocidad){
+  if(velocidad <= 40){
+    return 30;
+  } else if (velocidad > 40 && velocidad <= 90){
+    return 70;
+  } else {
+    return 128;
   }
 }
 
@@ -216,36 +243,48 @@ void loop() {
   }
 
   if (encender == 1){
-    //marchaAtras();
-    //delay(1000);
-    //aperturaPuerta();
-    //delay(1000);
     sonidoEncendido();
     delay(100);
-    //sonidoBocina();
-    //delay(100);
-   // marchaAtras();
-  
+    cont = 0;
+    velocidad = 0;
+    velocidad_ant = 0;
     encender = encender + 1;
   }
   else if (encender == 2){
-    if(velocidad == velocidad_ant && bocina == 0){
-      sonidoConstanteVelocidad();
-    } else if (velocidad >= velocidad_ant && bocina == 0){
-      sonidoAceleraVelocidad();
-      sonidoAceleraVelocidad();
+    if (velocidad <= 120 && cont < 12){
+      velocidad = velocidad +10;
+      cont = cont + 1;
+    } else if(cont == 12 && velocidad > 0){
+      cont = cont + 12;
+      velocidad = 120;
+    }else if (cont > 12){
+      velocidad = velocidad - 10;
+      cont = cont - 1;
+    }
+    Serial.println(velocidad);
+
+   if(velocidad == 0){
+      sonidoAutoDetenido();
+      velocidad = 0;
+      velocidad_ant = 0;
+   } else if(velocidad == velocidad_ant && bocina == 0){
+      volumen = obtencionVolumen (velocidad);
+      sonidoConstanteVelocidad(volumen);      
+   } else if (velocidad >= velocidad_ant && bocina == 0){
+      volumen = obtencionVolumen (velocidad);
+      sonidoAceleraVelocidad(volumen);
       velocidad_ant = velocidad;
-    } else if (velocidad <= velocidad_ant && bocina == 0){
-      sonidoDesaceleraVelocidad();
-      sonidoDesaceleraVelocidad();
+   } else if (velocidad <= velocidad_ant && bocina == 0){
+      volumen = obtencionVolumen (velocidad);
+      sonidoDesaceleraVelocidad(volumen);
       velocidad_ant = velocidad;
-    } 
+   } 
       
   }
   if(bocina == 1){
     sonidoBocina();
   }
-
+  delay(1);
   client.loop();
 
   
