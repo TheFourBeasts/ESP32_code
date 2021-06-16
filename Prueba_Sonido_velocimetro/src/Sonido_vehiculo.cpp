@@ -12,6 +12,7 @@
 #include "soc/rtc_wdt.h"
 #include "FreeRTOS.h"
 //#include "CalculateLastLapTime.h"
+#include <1965FordMustangV8idle.h>
 #define contacto 14
 #define sonido 26
 //#define reflector 19
@@ -20,6 +21,7 @@
 //******Variables de Sonido*****
 volatile int encender = 0;
 volatile int bocina = 0;
+volatile int volumen = 0;
 
 //******Variables de velocimetro*****
 //_CalculateLastLapTime cllt;
@@ -30,7 +32,7 @@ volatile unsigned timeLap = 490;
 volatile unsigned long startTimeLap = 0;
 volatile unsigned long endTimeLap = 2000;
 
-uint32_t inputPin = 34;
+uint32_t inputPin = 36;
 
 //**************************************
 
@@ -45,6 +47,7 @@ const char* client_id = "Luciano"; //Completar con cualquier nombre
 const char* client_user = "vehiculo123";
 const char* client_pass = "emqxd123";
 const char *root_topic_subscribe = "esp/contacto";
+const char *root_topic_subscribe_2 = "esp/velocidad";
 const char *root_topic_subscribe_3 = "esp/bocina";
 
 volatile int auxiliar = 0;
@@ -91,23 +94,31 @@ void sonidoEncendido(){
   }
 }
 
-void sonidoAceleraVelocidad(){
+void sonidoAceleraVelocidad(int auxiliar){
+  volatile int inicio = millis();
   for (int i = 0; i < 19583/*62335*/; ++i){
-      dacWrite(sonido, constrain(acelera[i]*75/100+128,0,255));
+      dacWrite(26, constrain(acelera[i]*auxiliar/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
+  volatile int fin = millis();
+  //Serial.print("Acelera -> ");
+	//Serial.println(fin-inicio);
 }
 
-void sonidoDesaceleraVelocidad(){
+void sonidoDesaceleraVelocidad(int auxiliar){
+  volatile int inicio = millis();
   for (int i = 0; i < 19583; ++i){
-      dacWrite(sonido, constrain(constante[i]*128/100+128,0,255));
+      dacWrite(26, constrain(constante[i]*auxiliar/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
+  volatile int fin = millis();
+  //Serial.print("Desacelera -> ");
+	//Serial.println(fin-inicio);
 }
 
-void sonidoConstanteVelocidad(){
+void sonidoConstanteVelocidad(int auxiliar){
   for (int i = 0; i < 19583/*37375*/; ++i){
-      dacWrite(sonido, constrain(revSamples[i]*50/100+128,0,255));
+      dacWrite(26, constrain(revSamples[i]*auxiliar/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
 }
@@ -126,39 +137,45 @@ void sonidoBocina(){
   }
 }
 
-void simulacionVelocimetro(){
-  int i = 0;
-  while(i>2){
-    digitalWrite(34,HIGH);
-    digitalWrite(34,LOW);
-    i = i+1;
+void sonidoAutoDetenido(){
+  for (int i = 0; i < 2945; ++i){
+      dacWrite(26, constrain(samples[i]*128/100+128,0,255));
+      delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
-  
+}
+
+int obtencionVolumen (float velocidad){
+  if(velocidad <= 40){
+    return 30;
+  } else if (velocidad > 40 && velocidad <= 90){
+    return 70;
+  } else {
+    return 128;
+  }
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
 	String incoming = "";
-	Serial.print("Mensaje recibido desde -> ");
-	Serial.print(topic);
-	Serial.println("");
+	//Serial.print("Mensaje recibido desde -> ");
+	//Serial.print(topic);
+	//Serial.println("");
 	for (int i = 0; i < length; i++) {
 		incoming += (char)payload[i];
 	}
 	incoming.trim();
-	Serial.println("Mensaje -> " + incoming);
+	//Serial.println("Mensaje -> " + incoming);
 
 	if (String(topic).equals("esp/contacto")) {    
 		if(incoming.equals("true")){
 		  encender = 1;
-      digitalWrite(contacto, HIGH);
 		}
 		else if(incoming.equals("false")){
 		  encender = 0;
-      digitalWrite(contacto, LOW);
 		}
 	}
   if (String(topic).equals("esp/velocidad")) {    
-		velocidad = incoming.toFloat();
+		Serial.print("Velocidad: ");
+    Serial.println(incoming.toFloat());
 	}
   if (String(topic).equals("esp/bocina")) {    
 		if(incoming.equals("true")){
@@ -183,6 +200,13 @@ void reconnect() {
 			}else{
 				Serial.print("fallo Suscripciión -> ");
         Serial.println(root_topic_subscribe);
+			}
+      if(client.subscribe(root_topic_subscribe_2)){
+				Serial.print("Suscripcion ok -> ");
+        Serial.println(root_topic_subscribe_2);
+			}else{
+				Serial.print("fallo Suscripciión -> ");
+        Serial.println(root_topic_subscribe_2);
 			}
       if(client.subscribe(root_topic_subscribe_3)){
 				Serial.print("Suscripcion ok -> ");
@@ -257,43 +281,51 @@ void loop() {
   if (encender == 1){
     sonidoEncendido();
     delay(100);
-  
+    cont = 0;
+    velocidad = 0;
+    velocidad_ant = 0;
     encender = encender + 1;
   }
   else if (encender == 2){
-    ///////////////// Logica de velocimetro ///////////////////
-    /*cont++;
-    if(cont == 1){
-      startTimeLap = millis();
-    }else if(cont == 2){
-      endTimeLap = millis();
-      timeLap = endTimeLap - startTimeLap;
-      startTimeLap = endTimeLap;
-      cont = 1;
+    if (velocidad <= 120 && cont < 12){
+      velocidad = velocidad +10;
+      cont = cont + 1;
+    } else if(cont == 12 && velocidad > 0){
+      cont = cont + 12;
+      velocidad = 120;
+    }else if (cont > 12){
+      velocidad = velocidad - 10;
+      cont = cont - 1;
     }
-    if(timeLap != 0){
-      velocidad = ((PI*0.0007874)*(3600000/timeLap));
-    }*/
-    Serial.print("startTimeLap  ");  Serial.println(startTimeLap);
+    char result[10]; // Buffer big enough for 7-character float
+    client.publish("esp/velocidad", dtostrf(velocidad, 6, 2, result));
+
+   if(velocidad == 0){
+      sonidoAutoDetenido();
+      velocidad = 0;
+      velocidad_ant = 0;
+   } else if(velocidad == velocidad_ant && bocina == 0){
+      volumen = obtencionVolumen (velocidad);
+      sonidoConstanteVelocidad(volumen);      
+   } else if (velocidad >= velocidad_ant && bocina == 0){
+      volumen = obtencionVolumen (velocidad);
+      sonidoAceleraVelocidad(volumen);
+      velocidad_ant = velocidad;
+   } else if (velocidad <= velocidad_ant && bocina == 0){
+      volumen = obtencionVolumen (velocidad);
+      sonidoDesaceleraVelocidad(volumen);
+      velocidad_ant = velocidad;
+   } 
+    /*Serial.print("startTimeLap  ");  Serial.println(startTimeLap);
     Serial.print("TimeLap  ");  Serial.println(timeLap);
     Serial.print("endTimeLap  ");  Serial.println(endTimeLap);
-    Serial.print(velocidad);Serial.println(" Km/h ");
-    ///////////////////////////////////////////////////////
-    if(velocidad == velocidad_ant && bocina == 0){
-      sonidoConstanteVelocidad();
-    } else if (velocidad >= velocidad_ant && bocina == 0){
-      sonidoAceleraVelocidad();
-      velocidad_ant = velocidad;
-    } else if (velocidad <= velocidad_ant && bocina == 0){
-      sonidoDesaceleraVelocidad();
-      velocidad_ant = velocidad;
-    }
-      
+    Serial.print(velocidad);Serial.println(" Km/h ");*/
+    /////////////////////////////////////////////////////// 
   }
   if(bocina == 1){
     sonidoBocina();
   }
-
+  delay(1);
   client.loop();
 
   
