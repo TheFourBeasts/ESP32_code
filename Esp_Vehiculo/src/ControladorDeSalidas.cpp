@@ -2,11 +2,11 @@
 #include <regex.h>
 
 ControladorDeSalidas::ControladorDeSalidas(){
-    posicion=14;
-    baja=16;
-    alta=17;
+    posicion=12;
+    baja=14;
+    alta=27;
     interior=18;
-    reflector=19;
+    reflector=25;
     contacto=13;
     puertas=33;
 

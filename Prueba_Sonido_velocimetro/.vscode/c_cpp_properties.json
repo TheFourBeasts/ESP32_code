@@ -103,8 +103,7 @@
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                 "C:/Users/lucia/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 "C:/Users/lucia/.platformio/packages/tool-unity",
-                "",
-                "${workspaceFolder}/include"
+                ""
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,

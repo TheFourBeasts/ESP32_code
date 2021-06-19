@@ -5,7 +5,7 @@
 #include <ControladorDeEntradas.h>
 #include <PubSubClient.h>
 
-RedWifi* wifi = new RedWifi("CAPPONI","clau1963");
+RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
 ControladorDeSalidas* controladorDeSalidas = new ControladorDeSalidas();
 ControladorDeEntradas* controladorDeEntradas = new ControladorDeEntradas();
 
