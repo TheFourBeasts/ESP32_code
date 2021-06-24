@@ -4,7 +4,6 @@
 ControladorGeneral::ControladorGeneral(){
     giro_derecho=22;
     giro_izquierdo=23;
-    baliza=35;
     giro_der_encendido=0;
     giro_izq_encendido=0;
     baliza_encendida=0;
@@ -14,13 +13,10 @@ ControladorGeneral::ControladorGeneral(){
     interior=18;
     reflector=25;
     contacto=13;
-    puertas=33;
-    luz_giro_derecho=13;//18;
-    luz_giro_izquierdo=12;//19;
+    puertas=35;
 
     pinMode(giro_derecho, INPUT);
     pinMode(giro_izquierdo, INPUT);
-    pinMode(baliza, INPUT);
     pinMode(posicion, OUTPUT);
     pinMode(baja, OUTPUT);
     pinMode(alta, OUTPUT);
@@ -28,8 +24,6 @@ ControladorGeneral::ControladorGeneral(){
     pinMode(reflector, OUTPUT);
     pinMode(contacto, OUTPUT);
     pinMode(puertas, OUTPUT);
-    pinMode(luz_giro_derecho, INPUT);
-    pinMode(luz_giro_izquierdo, INPUT);
 
     //Desactivo relé
     digitalWrite(contacto,HIGH);
@@ -48,7 +42,7 @@ void ControladorGeneral::encender_giro_der(String* topico, String* mensaje){
     *mensaje="on";
     giro_der_encendido=1;
     giro_izq_encendido=0;
-    baliza_encendida=0;
+    //baliza_encendida=0;
 }
 
 void ControladorGeneral::apagar_giro_der(String* topico, String* mensaje){
@@ -62,7 +56,7 @@ void ControladorGeneral::encender_giro_izq(String* topico, String* mensaje){
         *mensaje="on";
         giro_izq_encendido=1;
         giro_der_encendido=0;
-        baliza_encendida=0;
+        //baliza_encendida=0;
 
 }
 
@@ -73,18 +67,14 @@ void ControladorGeneral::apagar_giro_izq(String* topico, String* mensaje){
 
 }
 
-void ControladorGeneral::encender_apagar_baliza(String topico, String mensaje){
+void ControladorGeneral::encender_apagar_baliza(String mensaje){
+
         if(mensaje.equals("true")){
             baliza_encendida=1;
             giro_der_encendido=0;
             giro_izq_encendido=0; 
-            digitalWrite(luz_giro_derecho,HIGH);
-            digitalWrite(luz_giro_izquierdo,HIGH);
-            delay(500);
         } else {
             baliza_encendida=0;
-            digitalWrite(luz_giro_derecho,LOW);
-            digitalWrite(luz_giro_izquierdo,LOW);
         }
         
 
@@ -108,7 +98,7 @@ void ControladorGeneral::controlar_luces(String topico, String mensaje){
             encender_apagar(mensaje, reflector);
 
         } else if (topico.equals("esp/luces/baliza")){
-            encender_apagar_baliza(topico, mensaje); 
+            encender_apagar_baliza(mensaje); 
         }      
     }
 
@@ -151,4 +141,16 @@ void ControladorGeneral::controlar_entrada(String* topico, String* mensaje){
        
     }
 
+}
+
+int ControladorGeneral::getBaliza(){
+    return baliza_encendida;
+}
+
+int ControladorGeneral::getGiroDerecho(){
+    return giro_der_encendido;
+}
+
+int ControladorGeneral::getGiroIzquierdo(){
+    return giro_izq_encendido;
 }

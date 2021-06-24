@@ -3,10 +3,11 @@
 #include <RedWifi.h>
 #include <ControladorDeSalidas.h>
 #include <ControladorDeEntradas.h>
+#include <ControladorGeneral.h>
 #include <PubSubClient.h>
 
 RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
-ControladorDeSalidas* controladorDeSalidas = new ControladorDeSalidas();
+ControladorGeneral* controladorGeneral = new ControladorGeneral();
 ControladorDeEntradas* controladorDeEntradas = new ControladorDeEntradas();
 
 //Credenciales para el broker
@@ -15,10 +16,45 @@ const int mqtt_port = 12176;
 const char* client_id = "Lucas"; //Completar con cualquier nombre
 const char* client_user = "vehiculo123";
 const char* client_pass = "emqxd123";
+const int luz_giro_derecho = 32;
+const int luz_giro_izquierdo = 33;
+volatile int estado_baliza = 0;
+volatile int estado = 0;
+volatile int tiempo = 0;
+volatile int tiempo_baliza_ant = 0;
 WiFiClient espClient;
 PubSubClient client(espClient);
 String topico_publicacion="";
 String mensaje_publicacion="";
+
+void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado_giro_izq){
+	if(estado_baliza == 1 && (tiempo-tiempo_baliza_ant) >= 500){
+		tiempo_baliza_ant = tiempo;
+		if (estado == 0){
+			digitalWrite(luz_giro_derecho,HIGH);
+			digitalWrite(luz_giro_izquierdo,HIGH);
+			estado = 1;
+		} else {
+			digitalWrite(luz_giro_derecho,LOW);
+			digitalWrite(luz_giro_izquierdo,LOW);
+			estado = 0;
+		}
+	} else if(estado_baliza == 0 && estado_giro_der == 0 && estado_giro_izq == 0){
+		digitalWrite(luz_giro_derecho,LOW);
+		digitalWrite(luz_giro_izquierdo,LOW);
+		estado = 0;
+	}
+
+}
+
+void encender_apagar(String mensaje, int pin){
+    if(mensaje.equals("true")){
+        digitalWrite(pin,HIGH);
+    } else {
+        digitalWrite(pin,LOW);
+    }
+
+}
 
 void callback(char* topic, byte* payload, unsigned int length) {
     //Convierto el mensaje de byte a String
@@ -28,7 +64,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 	}
 	incoming.trim();
 
-    controladorDeSalidas->controlar(topic,incoming);
+    controladorGeneral->controlar_salida(topic,incoming);
 }
 
 void reconnect() {
@@ -57,18 +93,33 @@ void setup() {
     wifi->conectar();
     client.setServer(mqtt_server, mqtt_port);
     client.setCallback(callback);
+	pinMode(luz_giro_derecho, OUTPUT);
+    pinMode(luz_giro_izquierdo, OUTPUT);
 }
 
 void loop(){
 	if(!client.connected()){
 		reconnect();
 	}
+	tiempo = millis();
 
-	controladorDeEntradas->controlar(&topico_publicacion,&mensaje_publicacion);
+	controladorGeneral->controlar_entrada(&topico_publicacion,&mensaje_publicacion);
 	if (client.connected() && !(mensaje_publicacion.equals(""))){
     	client.publish(topico_publicacion.c_str(),mensaje_publicacion.c_str());
 	}
 	mensaje_publicacion="";
+	int estado_bal = controladorGeneral->getBaliza();
+	int estado_giro_der = controladorGeneral->getGiroDerecho();
+	int estado_giro_izq = controladorGeneral->getGiroIzquierdo();
+	encenderBaliza(estado_bal,tiempo,estado_giro_der,estado_giro_izq);
+	if (estado_giro_der == 1 && estado_bal == 0){
+		encender_apagar("true", luz_giro_derecho);
+	} else if (estado_giro_izq == 1 && estado_bal == 0){
+		encender_apagar("true", luz_giro_izquierdo);
+	}
+
+	
+
 
 	client.loop();
 }
