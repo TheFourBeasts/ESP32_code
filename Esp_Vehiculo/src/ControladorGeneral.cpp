@@ -7,11 +7,11 @@ ControladorGeneral::ControladorGeneral(){
     giro_der_encendido=0;
     giro_izq_encendido=0;
     baliza_encendida=0;
-    posicion=12;
+    posicion=13;
     baja=14;
     alta=27;
     interior=18;
-    reflector=25;
+    reflector=12;
     contacto=13;
     puertas=35;
 
