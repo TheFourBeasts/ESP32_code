@@ -117,6 +117,7 @@ void setup() {
     pinMode(luz_giro_izquierdo, OUTPUT);
 	pinMode(interior, OUTPUT);
 	pinMode(puertas, INPUT);
+	pinMode(bocina, OUTPUT);
 }
 
 void loop(){
