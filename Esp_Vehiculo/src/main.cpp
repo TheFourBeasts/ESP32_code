@@ -5,6 +5,7 @@
 #include <ControladorDeEntradas.h>
 #include <ControladorGeneral.h>
 #include <PubSubClient.h>
+#include <CarHorn.h>
 
 RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
 ControladorGeneral* controladorGeneral = new ControladorGeneral();
@@ -16,8 +17,20 @@ const int mqtt_port = 12176;
 const char* client_id = "Lucas"; //Completar con cualquier nombre
 const char* client_user = "vehiculo123";
 const char* client_pass = "emqxd123";
+
+// Pines relacionados a las luces
+// Pines salida
 const int luz_giro_derecho = 32;
 const int luz_giro_izquierdo = 33;
+const int interior = 18;
+const int bocina=26;
+// Pines entrada
+const int puertas = 21;
+const int cinturon_conductor = 25;
+const int cinturon_acompanante = 26;
+const int sensor_acompanante = 34;
+
+// Variable asociadas a la baliza
 volatile int estado_baliza = 0;
 volatile int estado = 0;
 volatile int tiempo = 0;
@@ -26,6 +39,13 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 String topico_publicacion="";
 String mensaje_publicacion="";
+
+void sonarBocina(){
+	for (int i = 0; i < 13513; ++i){
+      dacWrite(bocina, constrain(hornSamples[i]*100/100+128,0,255));
+      delayMicroseconds(38); // ((1/22050)*1000000) - 7
+  }
+}
 
 void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado_giro_izq){
 	if(estado_baliza == 1 && (tiempo-tiempo_baliza_ant) >= 500){
@@ -95,6 +115,8 @@ void setup() {
     client.setCallback(callback);
 	pinMode(luz_giro_derecho, OUTPUT);
     pinMode(luz_giro_izquierdo, OUTPUT);
+	pinMode(interior, OUTPUT);
+	pinMode(puertas, INPUT);
 }
 
 void loop(){
@@ -118,7 +140,16 @@ void loop(){
 		encender_apagar("true", luz_giro_izquierdo);
 	}
 
-	
+	// Validacion de apertura de puertas
+	if(digitalRead(puertas) == 0){
+		digitalWrite(interior,LOW);
+	} else{
+		digitalWrite(interior,HIGH);
+	}
+
+	if(controladorGeneral->getBocina() == 1){
+		sonarBocina();
+	} 
 
 
 	client.loop();
