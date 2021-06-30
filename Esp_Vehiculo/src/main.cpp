@@ -28,7 +28,7 @@ const int bocina=26;
 const int puertas = 21;
 const int cinturon_conductor = 25;
 const int cinturon_acompanante = 26;
-const int sensor_acompanante = 34;
+const int sensor_acompanante = 35;
 
 // Variable asociadas a la baliza
 volatile int estado_baliza = 0;
@@ -41,6 +41,63 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 String topico_publicacion="";
 String mensaje_publicacion="";
+
+
+
+
+/******************
+ * Variables Medidor Carga de Bateria                 *
+ ******************/
+uint16_t entrada;// =9.0;
+int analogInput = 34; //Definimos el pin analógico ADC1(chanel6) para la lectura del voltaje
+float vout = 0.0;     //Definimos la variable Vout, tension quesale del divisor resistivo
+float vin = 0.0;      //Definimos la variable Vin, tension que sale del divisor resistivo
+float R1 = 36000.0;   //  R1 (100K) Valor de la resistencia R1 del divisor de tensión
+float R2 = 10000.0;   //  R2 (10K) Valor de la resistencia R2 del divisor de tención
+//int value = 0;        //Definimos la variable
+int value = 3240;        //Definimos la variable para hacer simulacion
+int contFor;
+uint16_t rafagaMuestras = 0;
+//int estado_bat = 0;
+
+unsigned long initTime = 0;
+unsigned long finalTime = 0;
+unsigned long timeFunction = 0;
+/***************/
+
+/****************
+ * Calcula pordentaje de carga de la Bateria
+ ****************/ 
+   void calcula_Porcentaje_de_carga(){
+      if(value<2830){
+         estado_bat = 0;
+      }
+      if(value>3230){
+         estado_bat = 100;
+      }
+      if((value > 2830)&&(value < 3230)){ 
+         estado_bat = (value-2830)/4;   
+      }
+   }
+
+
+/*******************
+ * Funcion que calcula la carga de la Bateria          *
+ *******************/
+
+void IRAM_ATTR isr_calculaCargaBateria()
+{   rafagaMuestras=0;
+   for (contFor = 0; contFor < 20; contFor++)
+   {
+      entrada=analogRead(analogInput);
+      rafagaMuestras = rafagaMuestras + entrada;
+   }
+   value = rafagaMuestras / 20;
+   vout = entrada*(3.3/4096);   // Cálculo para obtener el Vout
+   vin = ((vout/R2 )*(R1 + R2)); // Cálculo para obtener Vin del divisor de tensión
+   calcula_Porcentaje_de_carga();  
+}
+
 
 void sonarBocina(){
 	for (int i = 0; i < 13513; ++i){
@@ -115,6 +172,8 @@ void setup() {
     wifi->conectar();
     client.setServer(mqtt_server, mqtt_port);
     client.setCallback(callback);
+	
+	pinMode(analogInput, INPUT);
 	pinMode(luz_giro_derecho, OUTPUT);
     pinMode(luz_giro_izquierdo, OUTPUT);
 	pinMode(interior, OUTPUT);
@@ -123,6 +182,9 @@ void setup() {
 }
 
 void loop(){
+
+	calcula_Porcentaje_de_carga();
+
 	if(!client.connected()){
 		reconnect();
 	}
@@ -154,15 +216,17 @@ void loop(){
 		sonarBocina();
 	} 
 
+	// Envio el estado de la bateria cada 1 seg y medio
 	if(tiempo-tiempo_bateria_ant > 1500){
-		if (estado_bat > 0){
-			estado_bat = estado_bat-2;
+		if (value > 2820){
+			value = value-2;
 		} else {
-			estado_bat = 100;
+			value = 3230;
 		}
 
 		tiempo_bateria_ant = tiempo;
 
+		// Armado del mensaje (pasaje de int a char*)
 		char mensaje_publicacion[3];
 		dtostrf(estado_bat, 3, 0, mensaje_publicacion);
 		Serial.println(mensaje_publicacion);
