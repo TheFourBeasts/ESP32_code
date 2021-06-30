@@ -35,6 +35,8 @@ volatile int estado_baliza = 0;
 volatile int estado = 0;
 volatile int tiempo = 0;
 volatile int tiempo_baliza_ant = 0;
+volatile int tiempo_bateria_ant = 0;
+volatile int estado_bat = 100;
 WiFiClient espClient;
 PubSubClient client(espClient);
 String topico_publicacion="";
@@ -151,6 +153,21 @@ void loop(){
 	if(controladorGeneral->getBocina() == 1){
 		sonarBocina();
 	} 
+
+	if(tiempo-tiempo_bateria_ant > 1500){
+		if (estado_bat > 0){
+			estado_bat = estado_bat-2;
+		} else {
+			estado_bat = 100;
+		}
+
+		tiempo_bateria_ant = tiempo;
+
+		char mensaje_publicacion[3];
+		dtostrf(estado_bat, 3, 0, mensaje_publicacion);
+		Serial.println(mensaje_publicacion);
+		client.publish("esp/bateria",mensaje_publicacion);
+	}
 
 
 	client.loop();
