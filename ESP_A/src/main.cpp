@@ -61,6 +61,9 @@ volatile unsigned timeLap = 490;
 volatile unsigned long startTimeLap = 0;
 volatile unsigned long endTimeLap = 2000;
 
+volatile int tiempo_ejecucion = 0;
+volatile int tiempo_velocidad_ant = 0;
+
 
 
 
@@ -285,6 +288,12 @@ void setup() {
 }
 
 void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  delay(10);
+  tiempo_ejecucion = millis();
+
 
   if(digitalRead(marcha_adelante)){
     if (client.connected()){
@@ -306,13 +315,6 @@ void loop() {
       client.publish(topic_pub_adelante,"false");
       client.publish(topic_pub_atras,"false");
 	  }
-  }
-
-
-	Serial.println(velocidad);
-	delay(10);
-  if (!client.connected()) {
-    reconnect();
   }
 
   if (encender == 1){
@@ -367,6 +369,11 @@ void loop() {
     }
   } 
   delay(1);
+  if(tiempo_ejecucion-tiempo_velocidad_ant > 1000){
+		tiempo_velocidad_ant = tiempo_ejecucion;
+
+		client.publish(topic_pub_velocidad,String(velocidad).c_str());
+	}
   client.loop();
 
 
