@@ -1,15 +1,12 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <RedWifi.h>
-#include <ControladorDeSalidas.h>
-#include <ControladorDeEntradas.h>
 #include <ControladorGeneral.h>
 #include <PubSubClient.h>
 #include <CarHorn.h>
 
 RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
 ControladorGeneral* controladorGeneral = new ControladorGeneral();
-ControladorDeEntradas* controladorDeEntradas = new ControladorDeEntradas();
 
 //Credenciales para el broker
 const char* mqtt_server= "zc482089.en.emqx.cloud";
@@ -201,8 +198,13 @@ void loop(){
 	encenderBaliza(estado_bal,tiempo,estado_giro_der,estado_giro_izq);
 	if (estado_giro_der == 1 && estado_bal == 0){
 		encender_apagar("true", luz_giro_derecho);
+		client.publish("app/giroIzquierdo","0");
 	} else if (estado_giro_izq == 1 && estado_bal == 0){
 		encender_apagar("true", luz_giro_izquierdo);
+		client.publish("app/giroDerecho","0");
+	} else if (estado_giro_izq == 1 && estado_giro_der == 1 && estado_bal == 0){
+		client.publish("app/giroDerecho","0");
+		client.publish("app/giroIzquierdo","0");
 	}
 
 	// Validacion de apertura de puertas
