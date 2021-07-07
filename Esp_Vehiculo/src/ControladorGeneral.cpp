@@ -138,18 +138,19 @@ void ControladorGeneral::controlar_salida(char* topico, String mensaje){
     //}
 }
 
-void ControladorGeneral::controlar_entrada(String* topico, String* mensaje){
+void ControladorGeneral::controlar_entrada(String* topico, String* mensaje, int estado_baliza){
     //Envío mensaje al broker solo si cambiaron de estado
-    if(digitalRead(giro_derecho) && !giro_der_encendido){
+    if(digitalRead(giro_derecho) && !giro_der_encendido && estado_baliza == 0){
         encender_giro_der(topico,mensaje);    
 
-    } else if(!digitalRead(giro_derecho) && giro_der_encendido) {
+    } else if(!digitalRead(giro_derecho) && giro_der_encendido && estado_baliza == 0) {
         apagar_giro_der(topico,mensaje);
 
-    } else if(digitalRead(giro_izquierdo) && !giro_izq_encendido){
+    } 
+    if(digitalRead(giro_izquierdo) && !giro_izq_encendido && estado_baliza == 0){
         encender_giro_izq(topico,mensaje);   
 
-    } else if(!digitalRead(giro_izquierdo) && giro_izq_encendido){
+    } else if(!digitalRead(giro_izquierdo) && giro_izq_encendido && estado_baliza == 0){
         apagar_giro_izq(topico,mensaje);
        
     }

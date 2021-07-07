@@ -95,7 +95,7 @@ void IRAM_ATTR isr_calculaCargaBateria()
    calcula_Porcentaje_de_carga();  
 }
 
-
+// Sonido correspondiente a la bocina
 void sonarBocina(){
 	for (int i = 0; i < 13513; ++i){
       dacWrite(bocina, constrain(hornSamples[i]*100/100+128,0,255));
@@ -103,9 +103,18 @@ void sonarBocina(){
   }
 }
 
+// Se apagan sus luces asociadas
+void apagarLuces(){
+	digitalWrite(luz_giro_derecho,LOW);
+	digitalWrite(luz_giro_izquierdo,LOW);
+	estado = 0;
+}
+
 void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado_giro_izq){
+	// Valida si la baliza esta encendida y si el utimo cambio de estado fue hace mas de 500 ms
 	if(estado_baliza == 1 && (tiempo-tiempo_baliza_ant) >= 500){
 		tiempo_baliza_ant = tiempo;
+		// Valida si la baliza estaba encendida o apagada para hacer el pestañeo de la luz
 		if (estado == 0){
 			digitalWrite(luz_giro_derecho,HIGH);
 			digitalWrite(luz_giro_izquierdo,HIGH);
@@ -115,10 +124,9 @@ void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado
 			digitalWrite(luz_giro_izquierdo,LOW);
 			estado = 0;
 		}
+	// Si la baliza y los guiños estan apagados, se apagan sus luces asociadas
 	} else if(estado_baliza == 0 && estado_giro_der == 0 && estado_giro_izq == 0){
-		digitalWrite(luz_giro_derecho,LOW);
-		digitalWrite(luz_giro_izquierdo,LOW);
-		estado = 0;
+		apagarLuces();
 	}
 
 }
@@ -187,7 +195,7 @@ void loop(){
 	}
 	tiempo = millis();
 
-	controladorGeneral->controlar_entrada(&topico_publicacion,&mensaje_publicacion);
+	controladorGeneral->controlar_entrada(&topico_publicacion,&mensaje_publicacion,estado_baliza);
 	if (client.connected() && !(mensaje_publicacion.equals(""))){
     	client.publish(topico_publicacion.c_str(),mensaje_publicacion.c_str());
 	}
@@ -196,7 +204,7 @@ void loop(){
 	int estado_giro_der = controladorGeneral->getGiroDerecho();
 	int estado_giro_izq = controladorGeneral->getGiroIzquierdo();
 	encenderBaliza(estado_bal,tiempo,estado_giro_der,estado_giro_izq);
-	if (estado_giro_der == 1 && estado_bal == 0){
+	/*if (estado_giro_der == 1 && estado_bal == 0){
 		encender_apagar("true", luz_giro_derecho);
 		client.publish("app/giroIzquierdo","0");
 	} else if (estado_giro_izq == 1 && estado_bal == 0){
@@ -205,7 +213,7 @@ void loop(){
 	} else if (estado_giro_izq == 1 && estado_giro_der == 1 && estado_bal == 0){
 		client.publish("app/giroDerecho","0");
 		client.publish("app/giroIzquierdo","0");
-	}
+	}*/
 
 	// Validacion de apertura de puertas
 	if(digitalRead(puertas) == 0){
