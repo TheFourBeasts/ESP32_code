@@ -61,17 +61,17 @@ void ControladorGeneral::apagar_giro_der(String* topico, String* mensaje){
 
 void ControladorGeneral::encender_giro_izq(String* topico, String* mensaje){
     *topico="app/giroIzquierdo";
-        *mensaje="1";
-        giro_izq_encendido=1;
-        giro_der_encendido=0;
-        //baliza_encendida=0;
+    *mensaje="1";
+    giro_izq_encendido=1;
+    giro_der_encendido=0;
+    //baliza_encendida=0;
 
 }
 
 void ControladorGeneral::apagar_giro_izq(String* topico, String* mensaje){
-     *topico="app/giroIzquierdo";
-        *mensaje="0";
-        giro_izq_encendido=0;
+    *topico="app/giroIzquierdo";
+    *mensaje="0";
+    giro_izq_encendido=0;
 
 }
 
@@ -138,21 +138,20 @@ void ControladorGeneral::controlar_salida(char* topico, String mensaje){
     //}
 }
 
-void ControladorGeneral::controlar_entrada(String* topico, String* mensaje, int estado_baliza){
+void ControladorGeneral::controlar_entrada(String* topico, String* mensaje){
     //Envío mensaje al broker solo si cambiaron de estado
-    if(digitalRead(giro_derecho) && !giro_der_encendido && estado_baliza == 0){
+    if(digitalRead(giro_derecho) && !giro_der_encendido){
         encender_giro_der(topico,mensaje);    
 
-    } else if(!digitalRead(giro_derecho) && giro_der_encendido && estado_baliza == 0) {
+    } else if(!digitalRead(giro_derecho) && giro_der_encendido) {
         apagar_giro_der(topico,mensaje);
 
     } 
-    if(digitalRead(giro_izquierdo) && !giro_izq_encendido && estado_baliza == 0){
+    if(digitalRead(giro_izquierdo) && !giro_izq_encendido){
         encender_giro_izq(topico,mensaje);   
 
-    } else if(!digitalRead(giro_izquierdo) && giro_izq_encendido && estado_baliza == 0){
-        apagar_giro_izq(topico,mensaje);
-       
+    } else if(!digitalRead(giro_izquierdo) && giro_izq_encendido){
+        apagar_giro_izq(topico,mensaje);  
     }
 
 }

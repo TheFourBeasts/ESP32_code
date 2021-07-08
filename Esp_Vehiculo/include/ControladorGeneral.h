@@ -3,7 +3,7 @@ class ControladorGeneral
 {
     public:
     ControladorGeneral();
-    void controlar_entrada(String* topico, String* mensaje, int estado_baliza);
+    void controlar_entrada(String* topico, String* mensaje);
     void controlar_salida(char* topico, String mensaje);
     int getBaliza();
     void encenderBaliza();

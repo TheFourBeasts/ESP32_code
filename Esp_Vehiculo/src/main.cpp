@@ -3,7 +3,7 @@
 #include <RedWifi.h>
 #include <ControladorGeneral.h>
 #include <PubSubClient.h>
-#include <CarHorn.h>
+#include <Bocina.h>
 
 RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
 ControladorGeneral* controladorGeneral = new ControladorGeneral();
@@ -26,6 +26,7 @@ const int puertas = 21;
 const int cinturon_conductor = 25;
 const int cinturon_acompanante = 26;
 const int sensor_acompanante = 35;
+const int analogInput = 34; 			// Definimos el pin analógico ADC1(chanel6) para la lectura del voltaje
 
 // Variable asociadas a la baliza
 volatile int estado_baliza = 0;
@@ -33,20 +34,22 @@ volatile int estado = 0;
 volatile int tiempo = 0;
 volatile int tiempo_baliza_ant = 0;
 volatile int tiempo_bateria_ant = 0;
+volatile int estado_giro_derecho_ant = 0;
+volatile int estado_giro_izquierdo_ant = 0;
+
+// Variables bateria
 volatile int estado_bat = 100;
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 String topico_publicacion="";
 String mensaje_publicacion="";
 
 
-
-
 /******************
  * Variables Medidor Carga de Bateria                 *
  ******************/
 uint16_t entrada;// =9.0;
-int analogInput = 34; //Definimos el pin analógico ADC1(chanel6) para la lectura del voltaje
 float vout = 0.0;     //Definimos la variable Vout, tension quesale del divisor resistivo
 float vin = 0.0;      //Definimos la variable Vin, tension que sale del divisor resistivo
 float R1 = 36000.0;   //  R1 (100K) Valor de la resistencia R1 del divisor de tensión
@@ -97,10 +100,19 @@ void IRAM_ATTR isr_calculaCargaBateria()
 
 // Sonido correspondiente a la bocina
 void sonarBocina(){
-	for (int i = 0; i < 13513; ++i){
+	for (int i = 0; i < 12311/*13513*/; ++i){
       dacWrite(bocina, constrain(hornSamples[i]*100/100+128,0,255));
       delayMicroseconds(38); // ((1/22050)*1000000) - 7
   }
+}
+
+void encender_apagar(String mensaje, int pin){
+    if(mensaje.equals("true")){
+        digitalWrite(pin,HIGH);
+    } else {
+        digitalWrite(pin,LOW);
+    }
+
 }
 
 // Se apagan sus luces asociadas
@@ -111,6 +123,7 @@ void apagarLuces(){
 }
 
 void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado_giro_izq){
+
 	// Valida si la baliza esta encendida y si el utimo cambio de estado fue hace mas de 500 ms
 	if(estado_baliza == 1 && (tiempo-tiempo_baliza_ant) >= 500){
 		tiempo_baliza_ant = tiempo;
@@ -124,19 +137,24 @@ void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado
 			digitalWrite(luz_giro_izquierdo,LOW);
 			estado = 0;
 		}
+	} else if (estado_giro_derecho_ant != estado_giro_der && estado_giro_der == 1 && estado_giro_izq == 0 && estado_baliza == 0){
+		encender_apagar("true", luz_giro_derecho);
+		client.publish("app/giroIzquierdo","0");
+		client.publish("app/giroDerecho","1");
+		estado_giro_derecho_ant = estado_giro_der;
+	} else if (estado_giro_izquierdo_ant != estado_giro_izq && estado_giro_der == 0 && estado_giro_izq == 1 && estado_baliza == 0){
+		encender_apagar("true", luz_giro_izquierdo);
+		client.publish("app/giroDerecho","0");
+		client.publish("app/giroIzquierdo","1");
+		estado_giro_izquierdo_ant = estado_giro_izq;
 	// Si la baliza y los guiños estan apagados, se apagan sus luces asociadas
-	} else if(estado_baliza == 0 && estado_giro_der == 0 && estado_giro_izq == 0){
+	} else if((estado_baliza == 0 && estado_giro_der == estado_giro_izq) && (estado_giro_izquierdo_ant != estado_giro_izq || estado_giro_derecho_ant != estado_giro_der)){
+		client.publish("app/giroDerecho","0");
+		client.publish("app/giroIzquierdo","0");
+		estado_giro_derecho_ant = estado_giro_der;
+		estado_giro_izquierdo_ant = estado_giro_izq;
 		apagarLuces();
 	}
-
-}
-
-void encender_apagar(String mensaje, int pin){
-    if(mensaje.equals("true")){
-        digitalWrite(pin,HIGH);
-    } else {
-        digitalWrite(pin,LOW);
-    }
 
 }
 
@@ -195,25 +213,17 @@ void loop(){
 	}
 	tiempo = millis();
 
-	controladorGeneral->controlar_entrada(&topico_publicacion,&mensaje_publicacion,estado_baliza);
-	if (client.connected() && !(mensaje_publicacion.equals(""))){
+	controladorGeneral->controlar_entrada(&topico_publicacion,&mensaje_publicacion);
+	/*if (client.connected() && !(mensaje_publicacion.equals(""))){
     	client.publish(topico_publicacion.c_str(),mensaje_publicacion.c_str());
-	}
+	}*/
 	mensaje_publicacion="";
 	int estado_bal = controladorGeneral->getBaliza();
 	int estado_giro_der = controladorGeneral->getGiroDerecho();
 	int estado_giro_izq = controladorGeneral->getGiroIzquierdo();
+	
 	encenderBaliza(estado_bal,tiempo,estado_giro_der,estado_giro_izq);
-	/*if (estado_giro_der == 1 && estado_bal == 0){
-		encender_apagar("true", luz_giro_derecho);
-		client.publish("app/giroIzquierdo","0");
-	} else if (estado_giro_izq == 1 && estado_bal == 0){
-		encender_apagar("true", luz_giro_izquierdo);
-		client.publish("app/giroDerecho","0");
-	} else if (estado_giro_izq == 1 && estado_giro_der == 1 && estado_bal == 0){
-		client.publish("app/giroDerecho","0");
-		client.publish("app/giroIzquierdo","0");
-	}*/
+	
 
 	// Validacion de apertura de puertas
 	if(digitalRead(puertas) == 0){
@@ -226,8 +236,8 @@ void loop(){
 		sonarBocina();
 	} 
 
-	// Envio el estado de la bateria cada 1 seg y medio
-	if(tiempo-tiempo_bateria_ant > 1500){
+	// Envio el estado de la bateria cada 3 seg
+	if(tiempo-tiempo_bateria_ant > 3000){
 		if (value > 2820){
 			value = value-2;
 		} else {
