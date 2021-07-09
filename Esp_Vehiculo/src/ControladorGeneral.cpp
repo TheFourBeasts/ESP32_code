@@ -129,10 +129,7 @@ void ControladorGeneral::controlar_salida(char* topico, String mensaje){
     } else if (topic.equals("esp/bocina")){
         Serial.println(mensaje);
         encenderBocina(mensaje);
-    } else if (topic.equals("esp/puertas")){
-        Serial.println(mensaje);
-        encenderBocina(mensaje);
-    }
+    } 
     // else if (topic.equals("esp/puertas")){
      //   encender_apagar_rele(mensaje, puertas);
     //}
