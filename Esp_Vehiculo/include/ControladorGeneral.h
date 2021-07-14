@@ -18,7 +18,7 @@ class ControladorGeneral
     char giro_izq_encendido;
     char baliza_encendida;
     char bocina_encendida;
-    int posicion;
+    //int posicion;
     int baja;
     int alta;
     //int interior;

@@ -8,7 +8,7 @@ ControladorGeneral::ControladorGeneral(){
     giro_izq_encendido=0;
     baliza_encendida=0;
     bocina_encendida=0;
-    posicion=12;
+    //posicion=12;
     baja=14;
     alta=27;
     //interior=18;
@@ -17,7 +17,7 @@ ControladorGeneral::ControladorGeneral(){
  
     pinMode(giro_derecho, INPUT);
     pinMode(giro_izquierdo, INPUT);
-    pinMode(posicion, OUTPUT);
+    //pinMode(posicion, OUTPUT);
     pinMode(baja, OUTPUT);
     pinMode(alta, OUTPUT);
     //pinMode(interior, OUTPUT);
@@ -122,11 +122,11 @@ void ControladorGeneral::controlar_salida(char* topico, String mensaje){
     if(topic.substring(0,9).equals("esp/luces")){
         controlar_luces(topic,mensaje);
 
-    } else if (topic.equals("esp/contacto")){
+    }/* else if (topic.equals("esp/contacto")){
         encender_apagar_rele(mensaje, contacto);
         encender_apagar(mensaje, posicion);
 
-    } else if (topic.equals("esp/bocina")){
+    }*/ else if (topic.equals("esp/bocina")){
         Serial.println(mensaje);
         encenderBocina(mensaje);
     } 

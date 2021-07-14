@@ -23,9 +23,10 @@ const int interior = 18;
 const int bocina=26;
 // Pines entrada
 const int puertas = 21;
-const int cinturon_conductor = 25;
-const int cinturon_acompanante = 26;
-const int sensor_acompanante = 35;
+const int cinturon_conductor = 35;
+const int cinturon_acompanante = 19;
+const int sensor_acompanante = 36;
+const int sensor_conductor = 12;
 const int analogInput = 34; 			// Definimos el pin analógico ADC1(chanel6) para la lectura del voltaje
 
 // Variable asociadas a la baliza
@@ -93,7 +94,8 @@ void IRAM_ATTR isr_calculaCargaBateria()
       rafagaMuestras = rafagaMuestras + entrada;
    }
    value = rafagaMuestras / 20;
-   vout = entrada*(3.3/4096);   // Cálculo para obtener el Vout
+   //vout = entrada*(3.3/4096);   // Cálculo para obtener el Vout
+   vout = entrada*(12/4096);   // Cálculo para obtener el Vout
    vin = ((vout/R2 )*(R1 + R2)); // Cálculo para obtener Vin del divisor de tensión
    calcula_Porcentaje_de_carga();  
 }
@@ -202,11 +204,14 @@ void setup() {
 	pinMode(interior, OUTPUT);
 	pinMode(puertas, INPUT);
 	pinMode(bocina, OUTPUT);
+	pinMode(cinturon_conductor, INPUT);
+	pinMode(cinturon_acompanante, INPUT);
+	pinMode(sensor_acompanante, INPUT);
 }
 
 void loop(){
 
-	calcula_Porcentaje_de_carga();
+	isr_calculaCargaBateria();
 
 	if(!client.connected()){
 		reconnect();
@@ -238,11 +243,11 @@ void loop(){
 
 	// Envio el estado de la bateria cada 3 seg
 	if(tiempo-tiempo_bateria_ant > 3000){
-		if (value > 2820){
+		/*if (value > 2820){
 			value = value-2;
 		} else {
 			value = 3230;
-		}
+		}*/
 
 		tiempo_bateria_ant = tiempo;
 
