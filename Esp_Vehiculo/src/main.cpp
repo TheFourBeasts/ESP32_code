@@ -4,6 +4,10 @@
 #include <ControladorGeneral.h>
 #include <PubSubClient.h>
 #include <Bocina.h>
+#include <HX711.h>
+
+#define factorCalibracion1 -211500    // factorCalibracionSensor1
+#define factorCalibracion2 -211500    // factorCalibracionSensor2
 
 RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
 ControladorGeneral* controladorGeneral = new ControladorGeneral();
@@ -28,6 +32,7 @@ const int cinturon_acompanante = 19;
 const int sensor_acompanante = 36;
 const int sensor_conductor = 12;
 const int analogInput = 34; 			// Definimos el pin analógico ADC1(chanel6) para la lectura del voltaje
+const int clock = 6;
 
 // Variable asociadas a la baliza
 volatile int estado_baliza = 0;
@@ -40,6 +45,12 @@ volatile int estado_giro_izquierdo_ant = 0;
 
 // Variables bateria
 volatile int estado_bat = 100;
+
+// Variables sensor de peso
+volatile int pesoEnGramos1 = 0; 
+volatile int pesoEnGramos2 = 0;
+HX711 scale(sensor_conductor, clock); //(dt, sck)
+HX711 scale2(sensor_acompanante, clock); //(dt, sck)
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -124,6 +135,12 @@ void apagarLuces(){
 	estado = 0;
 }
 
+void Pesar() {
+  //Aca se agregan las balanzas que faltan...
+    pesoEnGramos1 = scale.get_units() * 1000; 
+    pesoEnGramos2 = scale2.get_units() * 1000; 
+}
+
 void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado_giro_izq){
 
 	// Valida si la baliza esta encendida y si el utimo cambio de estado fue hace mas de 500 ms
@@ -197,6 +214,12 @@ void setup() {
     wifi->conectar();
     client.setServer(mqtt_server, mqtt_port);
     client.setCallback(callback);
+
+	scale.set_scale(factorCalibracion1); 
+  	scale.tare();  
+   
+  	scale2.set_scale(factorCalibracion2); 
+  	scale2.tare(); 
 	
 	pinMode(analogInput, INPUT);
 	pinMode(luz_giro_derecho, OUTPUT);
@@ -229,6 +252,8 @@ void loop(){
 	
 	encenderBaliza(estado_bal,tiempo,estado_giro_der,estado_giro_izq);
 	
+	// Control de peso de los asientos
+	Pesar();
 
 	// Validacion de apertura de puertas
 	if(digitalRead(puertas) == 0){
