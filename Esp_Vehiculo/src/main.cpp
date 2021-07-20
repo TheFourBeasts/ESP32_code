@@ -4,7 +4,6 @@
 #include <ControladorGeneral.h>
 #include <PubSubClient.h>
 #include <Bocina.h>
-#include <HX711.h>
 
 #define factorCalibracion1 -211500    // factorCalibracionSensor1
 #define factorCalibracion2 -211500    // factorCalibracionSensor2
@@ -29,8 +28,8 @@ const int bocina=26;
 const int puertas = 21;
 const int cinturon_conductor = 35;
 const int cinturon_acompanante = 19;
-const int sensor_acompanante = 36;
-const int sensor_conductor = 12;
+const int sensor_peso_acompanante = 39;//12;//Definimos el pin analógico ADC1(chanel6) para la lectura del voltaje
+const int sensor_peso_conductor = 36;
 const int analogInput = 34; 			// Definimos el pin analógico ADC1(chanel6) para la lectura del voltaje
 const int clock = 6;
 
@@ -43,43 +42,83 @@ volatile int tiempo_bateria_ant = 0;
 volatile int estado_giro_derecho_ant = 0;
 volatile int estado_giro_izquierdo_ant = 0;
 
-// Variables bateria
-volatile int estado_bat = 100;
-
-// Variables sensor de peso
-volatile int pesoEnGramos1 = 0; 
-volatile int pesoEnGramos2 = 0;
-HX711 scale(sensor_conductor, clock); //(dt, sck)
-HX711 scale2(sensor_acompanante, clock); //(dt, sck)
-
 WiFiClient espClient;
 PubSubClient client(espClient);
 String topico_publicacion="";
 String mensaje_publicacion="";
 
+/******************************************************
+ * Variables Simulacion Sensor de Peso Conductor      *
+ ******************************************************/
+uint16_t entrada_Peso_Conductor;// =9.0;
+int value_Peso_Conductor = 0;        //Definimos la variable
+int cont_For_Peso_Conductor;
+uint16_t rafaga_Muestras_Peso_Conductor = 0;
+int estado_Peso_Conductor = 0;
 
-/******************
+/******************************************************
+ * Variables Simulacion Sensor de Peso Acompañante      *
+ ******************************************************/
+uint16_t entrada_Peso_Acompañante;// =9.0;
+int value_Peso_Acompañante = 0;        //Definimos la variable
+int cont_For_Peso_Acompañante;
+uint16_t rafaga_Muestras_Peso_Acompañante = 0;
+int estado_Peso_Acompañante = 0;
+
+/******************************************************
  * Variables Medidor Carga de Bateria                 *
- ******************/
+ ******************************************************/
 uint16_t entrada;// =9.0;
-float vout = 0.0;     //Definimos la variable Vout, tension quesale del divisor resistivo
-float vin = 0.0;      //Definimos la variable Vin, tension que sale del divisor resistivo
-float R1 = 36000.0;   //  R1 (100K) Valor de la resistencia R1 del divisor de tensión
-float R2 = 10000.0;   //  R2 (10K) Valor de la resistencia R2 del divisor de tención
-//int value = 0;        //Definimos la variable
-int value = 3240;        //Definimos la variable para hacer simulacion
+int value = 0;        //Definimos la variable
+//int value = 3240;       //Definimos la variable para hacer simulacion
 int contFor;
 uint16_t rafagaMuestras = 0;
-//int estado_bat = 0;
+int estado_bat = 0;
+//int estado_bat = 100;   //Definimos la variable para hacer simulacion
 
 unsigned long initTime = 0;
 unsigned long finalTime = 0;
 unsigned long timeFunction = 0;
 /***************/
 
-/****************
- * Calcula pordentaje de carga de la Bateria
- ****************/ 
+/********************************************
+ * Calcula el Peso del Conductor
+ ********************************************/ 
+   void calcula_Peso_Conductor(){
+      
+      value_Peso_Conductor = rafaga_Muestras_Peso_Conductor / 20; 
+
+      if(value_Peso_Conductor<30){
+         estado_Peso_Conductor = 0;
+      }
+      if(value_Peso_Conductor>4000){
+         estado_Peso_Conductor = 200;
+      }
+      if((value_Peso_Conductor > 30)&&(value_Peso_Conductor < 4000)){ 
+         estado_Peso_Conductor = ((value_Peso_Conductor*50)/1000);
+      }
+      rafaga_Muestras_Peso_Conductor=0;
+   }
+
+/*********************************************************
+ * Funcion Interupcion toma muestras del peso conductor  *
+ *********************************************************/
+
+void IRAM_ATTR isr_Interrupcion_Peso_Conductor()
+{   //rafaga_Muestras_Peso_Conductor=0;
+   for (cont_For_Peso_Conductor = 0; cont_For_Peso_Conductor < 20; cont_For_Peso_Conductor++)
+   {
+      entrada_Peso_Conductor=analogRead(sensor_peso_conductor);
+      rafaga_Muestras_Peso_Conductor = rafaga_Muestras_Peso_Conductor + entrada_Peso_Conductor;
+   } 
+   //value_Peso_Conductor = rafaga_Muestras_Peso_Conductor / 20; 
+   calcula_Peso_Conductor();  
+}
+
+
+/********************************************
+ * Calcula porcentaje de carga de la Bateria
+ ********************************************/ 
    void calcula_Porcentaje_de_carga(){
       if(value<2830){
          estado_bat = 0;
@@ -93,9 +132,9 @@ unsigned long timeFunction = 0;
    }
 
 
-/*******************
+/***************************************************
  * Funcion que calcula la carga de la Bateria          *
- *******************/
+ ***************************************************/
 
 void IRAM_ATTR isr_calculaCargaBateria()
 {   rafagaMuestras=0;
@@ -105,9 +144,7 @@ void IRAM_ATTR isr_calculaCargaBateria()
       rafagaMuestras = rafagaMuestras + entrada;
    }
    value = rafagaMuestras / 20;
-   //vout = entrada*(3.3/4096);   // Cálculo para obtener el Vout
-   vout = entrada*(12/4096);   // Cálculo para obtener el Vout
-   vin = ((vout/R2 )*(R1 + R2)); // Cálculo para obtener Vin del divisor de tensión
+   
    calcula_Porcentaje_de_carga();  
 }
 
@@ -133,12 +170,6 @@ void apagarLuces(){
 	digitalWrite(luz_giro_derecho,LOW);
 	digitalWrite(luz_giro_izquierdo,LOW);
 	estado = 0;
-}
-
-void Pesar() {
-  //Aca se agregan las balanzas que faltan...
-    pesoEnGramos1 = scale.get_units() * 1000; 
-    pesoEnGramos2 = scale2.get_units() * 1000; 
 }
 
 void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado_giro_izq){
@@ -214,12 +245,6 @@ void setup() {
     wifi->conectar();
     client.setServer(mqtt_server, mqtt_port);
     client.setCallback(callback);
-
-	scale.set_scale(factorCalibracion1); 
-  	scale.tare();  
-   
-  	scale2.set_scale(factorCalibracion2); 
-  	scale2.tare(); 
 	
 	pinMode(analogInput, INPUT);
 	pinMode(luz_giro_derecho, OUTPUT);
@@ -229,12 +254,18 @@ void setup() {
 	pinMode(bocina, OUTPUT);
 	pinMode(cinturon_conductor, INPUT);
 	pinMode(cinturon_acompanante, INPUT);
-	pinMode(sensor_acompanante, INPUT);
+	pinMode(sensor_peso_acompanante, INPUT);
+	pinMode(sensor_peso_conductor, INPUT);
 }
 
 void loop(){
-
+	// Verificacion de estado de la bateria
 	isr_calculaCargaBateria();
+	// Verificacion del asiento del conductor
+	isr_Interrupcion_Peso_Conductor();
+	Serial.print("Peso:     ");
+	Serial.print(estado_Peso_Conductor);
+	Serial.println(" Kg");
 
 	if(!client.connected()){
 		reconnect();
@@ -251,9 +282,6 @@ void loop(){
 	int estado_giro_izq = controladorGeneral->getGiroIzquierdo();
 	
 	encenderBaliza(estado_bal,tiempo,estado_giro_der,estado_giro_izq);
-	
-	// Control de peso de los asientos
-	Pesar();
 
 	// Validacion de apertura de puertas
 	if(digitalRead(puertas) == 0){
@@ -262,6 +290,7 @@ void loop(){
 		digitalWrite(interior,HIGH);
 	}
 
+	// Valido si se presiono la bocina
 	if(controladorGeneral->getBocina() == 1){
 		sonarBocina();
 	} 
@@ -275,6 +304,10 @@ void loop(){
 		}*/
 
 		tiempo_bateria_ant = tiempo;
+
+		Serial.print("Carga de Bateria:   ");
+		Serial.print(estado_bat);
+		Serial.println(" %");
 
 		// Armado del mensaje (pasaje de int a char*)
 		char mensaje_publicacion[3];
