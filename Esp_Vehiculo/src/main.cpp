@@ -84,7 +84,7 @@ unsigned long timeFunction = 0;
 /********************************************
  * Calcula el Peso del Conductor
  ********************************************/ 
-   void calcula_Peso_Conductor(){
+   void calcula_Peso_conductor(){
       
       value_Peso_Conductor = rafaga_Muestras_Peso_Conductor / 20; 
 
@@ -100,6 +100,25 @@ unsigned long timeFunction = 0;
       rafaga_Muestras_Peso_Conductor=0;
    }
 
+/********************************************
+ * Calcula el Peso del Acompañante
+ ********************************************/ 
+   void calcula_Peso_acompañante(){
+      
+      value_Peso_Acompañante = rafaga_Muestras_Peso_Acompañante / 20; 
+
+      if(value_Peso_Acompañante<30){
+         estado_Peso_Acompañante = 0;
+      }
+      if(value_Peso_Acompañante>4000){
+         estado_Peso_Acompañante = 200;
+      }
+      if((value_Peso_Acompañante > 30)&&(value_Peso_Acompañante < 4000)){ 
+         estado_Peso_Acompañante = ((value_Peso_Acompañante*50)/1000);
+      }
+      rafaga_Muestras_Peso_Acompañante=0;
+   }
+
 /*********************************************************
  * Funcion Interupcion toma muestras del peso conductor  *
  *********************************************************/
@@ -111,8 +130,15 @@ void IRAM_ATTR isr_Interrupcion_Peso_Conductor()
       entrada_Peso_Conductor=analogRead(sensor_peso_conductor);
       rafaga_Muestras_Peso_Conductor = rafaga_Muestras_Peso_Conductor + entrada_Peso_Conductor;
    } 
+
+   for (cont_For_Peso_Acompañante = 0; cont_For_Peso_Acompañante < 20; cont_For_Peso_Acompañante++)
+   {
+      entrada_Peso_Acompañante=analogRead(sensor_peso_acompanante);
+      rafaga_Muestras_Peso_Acompañante = rafaga_Muestras_Peso_Acompañante + entrada_Peso_Acompañante;
+   } 
    //value_Peso_Conductor = rafaga_Muestras_Peso_Conductor / 20; 
-   calcula_Peso_Conductor();  
+   calcula_Peso_conductor();  
+   calcula_Peso_acompañante();  
 }
 
 
@@ -163,6 +189,24 @@ void encender_apagar(String mensaje, int pin){
         digitalWrite(pin,LOW);
     }
 
+}
+
+// Valida si el conductor o el acompañante tienen el cinturon puesto
+void controlarCinturon(int peso_conductor, int peso_acompañante){
+	if(peso_conductor > 50){
+		if(digitalRead(cinturon_conductor) == 0){
+			client.publish("app/alerta","Conductor tiene colocado el cinturon");
+		} else{
+			client.publish("app/alerta","Conductor no tiene colocado el cinturon");
+		}
+	}
+	if(peso_acompañante > 50){
+		if(digitalRead(cinturon_acompanante) == 0){
+			client.publish("app/alerta","Acompañante tiene colocado el cinturon");
+		} else{
+			client.publish("app/alerta","Acompañante no tiene colocado el cinturon");
+		}
+	}
 }
 
 // Se apagan sus luces asociadas
@@ -261,11 +305,6 @@ void setup() {
 void loop(){
 	// Verificacion de estado de la bateria
 	isr_calculaCargaBateria();
-	// Verificacion del asiento del conductor
-	isr_Interrupcion_Peso_Conductor();
-	Serial.print("Peso:     ");
-	Serial.print(estado_Peso_Conductor);
-	Serial.println(" Kg");
 
 	if(!client.connected()){
 		reconnect();
@@ -282,6 +321,17 @@ void loop(){
 	int estado_giro_izq = controladorGeneral->getGiroIzquierdo();
 	
 	encenderBaliza(estado_bal,tiempo,estado_giro_der,estado_giro_izq);
+	
+	// En caso de que el auto no este encendido no se controla si el conductor tiene o no el cinturon puesto
+	if(controladorGeneral->getEstadoVehiculo() == 1){
+		// Verificacion del asiento del conductor
+		isr_Interrupcion_Peso_Conductor();
+		Serial.print("Peso:     ");
+		Serial.print(estado_Peso_Conductor);
+		Serial.println(" Kg");
+		// Verificacion del cinturon del conductor y del acompañante
+		controlarCinturon(estado_Peso_Conductor,estado_Peso_Acompañante);
+	}
 
 	// Validacion de apertura de puertas
 	if(digitalRead(puertas) == 0){

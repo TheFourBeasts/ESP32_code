@@ -8,7 +8,7 @@ ControladorGeneral::ControladorGeneral(){
     giro_izq_encendido=0;
     baliza_encendida=0;
     bocina_encendida=0;
-    //posicion=12;
+    estado_vehiculo=0;
     baja=14;
     alta=27;
     //interior=18;
@@ -34,6 +34,15 @@ void ControladorGeneral::encenderBocina(String mensaje){
         bocina_encendida=1;
     } else {
         bocina_encendida=0;
+    }
+}
+
+void ControladorGeneral::encenderVehiculo(String mensaje){
+  
+  if(mensaje.equals("true")){
+        estado_vehiculo=1;
+    } else {
+        estado_vehiculo=0;
     }
 }
 
@@ -88,9 +97,9 @@ void ControladorGeneral::encender_apagar_baliza(String mensaje){
 
 void ControladorGeneral::controlar_luces(String topico, String mensaje){
         Serial.println(topico);
-        //if(topico.equals("esp/luces/posicion")){
-        //    encender_apagar(mensaje, posicion);
-        //} else 
+        if(topico.equals("esp/luces/posicion")){
+            encenderVehiculo(mensaje);
+        } else 
         if (topico.equals("esp/luces/baja")){
             encender_apagar(mensaje, baja);
 
@@ -167,4 +176,8 @@ int ControladorGeneral::getGiroIzquierdo(){
 
 int ControladorGeneral::getBocina(){
     return bocina_encendida;
+}
+
+int ControladorGeneral::getEstadoVehiculo(){
+    return estado_vehiculo;
 }
