@@ -25,10 +25,10 @@
 //***Variables y constantes de comunicacion********
 
 // Wi Fi
-RedWifi* wifi = new RedWifi("CAPPONI","clau1963");
+RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
 
 // Broker
-const char* mqtt_server= "zc482089.en.emqx.cloud"; //Para broker local ompletar con ip de red
+const char* mqtt_server= "zc482089.en.emqx.cloud"; //192.168.100.105  zc482089.en.emqx.cloud Para broker local ompletar con ip de red
 const int mqtt_port = 12176; //Para broker local cambiar puerto a 1883
 const char* client_id = "Lucas"; //Completar con cualquier nombre
 const char* client_user = "vehiculo123";
@@ -86,13 +86,9 @@ void IRAM_ATTR isr_interruption(){
   }
  
   if(timeLap != 0){
-  velocidad = ((PI*0.0007874)*(3600000/timeLap));
+    velocidad = ((PI*0.0007874)*(3600000/timeLap));    
   }
 
-  if(velocidad<10){
-    velocidad=0;
-  }
- 
 }
 
 //******Aceleraciones*****
@@ -244,8 +240,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 	}
 	incoming.trim();
 	Serial.println("Mensaje -> " + incoming);
-
-	if (String(topic).equals(topic_sub_contacto)) {    
+ 
+  
+	if(String(topic).equals(topic_sub_contacto)) {    
 		if(incoming.equals("true")){
 		  encender = 1;
       digitalWrite(rele_contacto,LOW);
@@ -335,7 +332,7 @@ void loop() {
 
     }
   }
-
+  
   if (encender == 1){
     velocidad=0;
     sonidoEncendido();
@@ -410,8 +407,9 @@ void loop() {
 
   kilometraje=PI*0.0007874*cont_vueltas;
   if(kilometraje >= 1){
-    client.publish(topic_pub_kilometraje,String(velocidad).c_str());
+    client.publish(topic_pub_kilometraje,String(kilometraje).c_str());
     kilometraje=0;
+    cont_vueltas=0;
   }
   
   client.loop();
