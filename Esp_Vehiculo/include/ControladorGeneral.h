@@ -11,6 +11,7 @@ class ControladorGeneral
     int getGiroIzquierdo();
     int getBocina();
     int getEstadoVehiculo();
+    int getEstadoAlarma();
 
     private:
     int giro_derecho;
@@ -20,6 +21,7 @@ class ControladorGeneral
     char baliza_encendida;
     char bocina_encendida;
     int estado_vehiculo;
+    int estado_alarma;
     int baja;
     int alta;
     //int interior;
@@ -36,6 +38,7 @@ class ControladorGeneral
     void apagar_baliza(String* topico, String* mensaje);
     void encenderBocina(String mensaje);
     void encenderVehiculo(String mensaje);
+    void abrir_puertas(String mensaje);
 
 
 };

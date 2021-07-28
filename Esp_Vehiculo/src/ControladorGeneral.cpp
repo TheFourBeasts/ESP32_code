@@ -9,6 +9,7 @@ ControladorGeneral::ControladorGeneral(){
     baliza_encendida=0;
     bocina_encendida=0;
     estado_vehiculo=0;
+    estado_alarma=0;
     baja=14;
     alta=27;
     //interior=18;
@@ -43,6 +44,15 @@ void ControladorGeneral::encenderVehiculo(String mensaje){
         estado_vehiculo=1;
     } else {
         estado_vehiculo=0;
+    }
+}
+
+void ControladorGeneral::abrir_puertas(String mensaje){
+  
+  if(mensaje.equals("true")){
+        estado_alarma=1;
+    } else {
+        estado_alarma=0;
     }
 }
 
@@ -97,9 +107,9 @@ void ControladorGeneral::encender_apagar_baliza(String mensaje){
 
 void ControladorGeneral::controlar_luces(String topico, String mensaje){
         Serial.println(topico);
-        if(topico.equals("esp/luces/posicion")){
+        /*if(topico.equals("esp/luces/posicion")){
             encenderVehiculo(mensaje);
-        } else 
+        } else */
         if (topico.equals("esp/luces/baja")){
             encender_apagar(mensaje, baja);
 
@@ -131,17 +141,16 @@ void ControladorGeneral::controlar_salida(char* topico, String mensaje){
     if(topic.substring(0,9).equals("esp/luces")){
         controlar_luces(topic,mensaje);
 
-    }/* else if (topic.equals("esp/contacto")){
-        encender_apagar_rele(mensaje, contacto);
-        encender_apagar(mensaje, posicion);
+    } else if (topic.equals("esp/contacto")){
+        encenderVehiculo(mensaje);
 
-    }*/ else if (topic.equals("esp/bocina")){
+    } else if (topic.equals("esp/bocina")){
         Serial.println(mensaje);
         encenderBocina(mensaje);
     } 
-    // else if (topic.equals("esp/puertas")){
-     //   encender_apagar_rele(mensaje, puertas);
-    //}
+     else if (topic.equals("esp/alarma")){
+        abrir_puertas(mensaje);
+    }
 }
 
 void ControladorGeneral::controlar_entrada(String* topico, String* mensaje){
@@ -180,4 +189,8 @@ int ControladorGeneral::getBocina(){
 
 int ControladorGeneral::getEstadoVehiculo(){
     return estado_vehiculo;
+}
+
+int ControladorGeneral::getEstadoAlarma(){
+    return estado_alarma;
 }
