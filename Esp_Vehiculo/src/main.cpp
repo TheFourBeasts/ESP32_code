@@ -11,7 +11,7 @@ ControladorGeneral* controladorGeneral = new ControladorGeneral();
 //Credenciales para el broker
 const char* mqtt_server= "zc482089.en.emqx.cloud";
 const int mqtt_port = 12176;
-const char* client_id = "Lucas"; //Completar con cualquier nombre
+const char* client_id = "Pepe"; //Completar con cualquier nombre
 const char* client_user = "vehiculo123";
 const char* client_pass = "emqxd123";
 
@@ -383,6 +383,7 @@ void loop(){
 		Serial.print("Peso Acompanante:     ");
 		Serial.print(estado_Peso_acompanante);
 		Serial.println(" Kg");
+		Serial.println(" ");
 
 		// Armado del mensaje (pasaje de int a char*)
 		char mensaje_publicacion[3];
