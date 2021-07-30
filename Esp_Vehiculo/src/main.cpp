@@ -149,14 +149,14 @@ void IRAM_ATTR isr_Interrupcion_Peso_Conductor()
  * Calcula porcentaje de carga de la Bateria
  ********************************************/ 
    void calcula_Porcentaje_de_carga(){
-      if(value<2830){
+      if(value<30){
          estado_bat = 0;
       }
       if(value>3230){
          estado_bat = 100;
       }
-      if((value > 2830)&&(value < 3230)){ 
-         estado_bat = (value-2830)/4;   
+      if((value > 30)&&(value < 3230)){ 
+         estado_bat = (value-30)/32;   
       }
    }
 
