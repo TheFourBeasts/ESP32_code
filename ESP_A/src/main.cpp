@@ -14,9 +14,6 @@
 #include <Sesenta_a_ochenta_const.h>
 #include <Ochenta_a_cien.h>
 #include <Ochenta_a_cien_const.h>
-#include <Cien_o_mas.h>
-#include <Cien_o_mas_const.h>
-#include <Mas_cien_a_cien.h>
 #include <Cien_a_ochenta.h>
 #include <Ochenta_a_sesenta.h>
 #include <Sesenta_a_cuarenta.h>
@@ -28,11 +25,11 @@
 //***Variables y constantes de comunicacion********
 
 // Wi Fi
-RedWifi* wifi = new RedWifi("CAPPONI","clau1963");
+RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
 
 // Broker
-const char* mqtt_server= "192.168.100.105";
-const int mqtt_port = 1883;
+const char* mqtt_server= "zc482089.en.emqx.cloud"; //192.168.100.105  zc482089.en.emqx.cloud Para broker local ompletar con ip de red
+const int mqtt_port = 12176; //Para broker local cambiar puerto a 1883
 const char* client_id = "Lucas"; //Completar con cualquier nombre
 const char* client_user = "vehiculo123";
 const char* client_pass = "emqxd123";
@@ -67,6 +64,9 @@ volatile unsigned long endTimeLap = 2000;
 volatile int tiempo_ejecucion = 0;
 volatile int tiempo_velocidad_ant = 0;
 
+volatile int flag_marcha=0;
+volatile int flag_neutro=0;
+
 /***************
  *  Funcion de interrucion para obtener
  *  la velociad.
@@ -86,9 +86,9 @@ void IRAM_ATTR isr_interruption(){
   }
  
   if(timeLap != 0){
-  velocidad = ((PI*0.0007874)*(3600000/timeLap));
+    velocidad = ((PI*0.0007874)*(3600000/timeLap));    
   }
- 
+
 }
 
 //******Aceleraciones*****
@@ -145,12 +145,7 @@ void sonidoAceleraOchentaCien(){
   }
 }
 
-void sonidoAceleraCienMas(){
-  for (int i = 0; i < 37631; ++i){
-      dacWrite(sonido, constrain(cienMasSamples[i]*100/100+128,0,255));
-      delayMicroseconds(38); 
-  }
-}
+
 
 //******Velocidades constantes*****
 void sonidoConstanteCeroVeinte(){
@@ -192,12 +187,7 @@ void sonidoConstanteOchentaCien(){
   }
 }
 
-void sonidoConstanteCienMas(){
-  for (int i = 0; i < 22527; ++i){
-      dacWrite(sonido, constrain(cienMasConstSamples[i]*100/100+128,0,255));
-      delayMicroseconds(38); 
-  }
-}
+
 
 //******Desaceleraciones*****
 void sonidoDesaceleraVeinteCero(){
@@ -234,15 +224,7 @@ void sonidoDesaceleraOchentaSesenta(){
 
 void sonidoDesaceleraCienOchenta(){
   for (int i = 0; i < 36095; ++i){
-      dacWrite(sonido, constrain(revSamples[i]*100/100+128,0,255));
-      delayMicroseconds(38);
-  }
-
-}
-
-void sonidoDesaceleraMasCienCien(){
-  for (int i = 0; i < 37631; ++i){
-      dacWrite(sonido, constrain(samples[i]*100/100+128,0,255));
+      dacWrite(sonido, constrain(revDesSamples[i]*100/100+128,0,255));
       delayMicroseconds(38);
   }
 
@@ -258,8 +240,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 	}
 	incoming.trim();
 	Serial.println("Mensaje -> " + incoming);
-
-	if (String(topic).equals(topic_sub_contacto)) {    
+ 
+  
+	if(String(topic).equals(topic_sub_contacto)) {    
 		if(incoming.equals("true")){
 		  encender = 1;
       digitalWrite(rele_contacto,LOW);
@@ -325,16 +308,31 @@ void loop() {
   tiempo_ejecucion = millis();
 
 
-  if(digitalRead(marcha_adelante)){
-    digitalWrite(rele_luz_atras,LOW);
-
-  } else if(digitalRead(marcha_atras)){
+  if(digitalRead(marcha_atras)){
     digitalWrite(rele_luz_atras,HIGH);
+    if(flag_marcha==0){
+      Serial.println("Marcha atras");
+      flag_marcha=1;
+      flag_neutro=1;
+    }
+
+  } else if(digitalRead(marcha_adelante)){
+    digitalWrite(rele_luz_atras,LOW);
+    if(flag_marcha==1){
+      Serial.println("Marcha adelante");
+      flag_marcha=0;
+      flag_neutro=1;
+    }
 
   } else {
     digitalWrite(rele_luz_atras,LOW);
-  }
+    if(flag_neutro==1){
+      Serial.println("Neutro");
+      flag_neutro=0;
 
+    }
+  }
+  
   if (encender == 1){
     velocidad=0;
     sonidoEncendido();
@@ -388,22 +386,14 @@ void loop() {
       flag_aceleracion = 5;
       sonidoConstanteSesentaOchenta();
 
-    }else if (velocidad>=80 && velocidad<100){
+    }else if (velocidad>80){
       if(flag_aceleracion<6){
       sonidoAceleraOchentaCien(); 
       }
-      if(flag_aceleracion>6){
-        sonidoDesaceleraMasCienCien();
-      } 
+   
       flag_aceleracion = 6;
       sonidoConstanteOchentaCien();
 
-    }else if (velocidad>=100){
-      if(flag_aceleracion<7){
-      sonidoAceleraCienMas();
-      } 
-      flag_aceleracion = 7;
-      sonidoConstanteCienMas();
     }
   } 
   delay(1);
@@ -411,16 +401,18 @@ void loop() {
   if(tiempo_ejecucion-tiempo_velocidad_ant > 1000){
 		tiempo_velocidad_ant = tiempo_ejecucion;
     client.publish(topic_pub_velocidad,String(velocidad).c_str());
+    Serial.println("velocidad:");
+    Serial.println(velocidad);
 	}
 
   kilometraje=PI*0.0007874*cont_vueltas;
   if(kilometraje >= 1){
-    client.publish(topic_pub_kilometraje,String(velocidad).c_str());
+    client.publish(topic_pub_kilometraje,String(kilometraje).c_str());
+    kilometraje=0;
+    cont_vueltas=0;
   }
   
   client.loop();
-  Serial.println("velocidad:");
-  Serial.println(velocidad);
   delay(10);
 
 
