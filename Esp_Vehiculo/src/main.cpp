@@ -5,7 +5,7 @@
 #include <PubSubClient.h>
 #include <Bocina.h>
 
-RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
+RedWifi* wifi = new RedWifi("Redmi LM","lmuratore123");
 ControladorGeneral* controladorGeneral = new ControladorGeneral();
 
 //Credenciales para el broker
@@ -38,12 +38,11 @@ volatile int tiempo_baliza_ant = 0;
 volatile int tiempo_bateria_ant = 0;
 volatile int estado_giro_derecho_ant = 0;
 volatile int estado_giro_izquierdo_ant = 0;
-volatile int tiempo_alerta_conductor_ant = 0;
-volatile int tiempo_alerta_acomp_ant = 0;
 
 // Variables relacionadas a los cinturones
-int estado_cinturon_conductor_ant = 0;
-int estado_cinturon_acomp_ant = 0;
+volatile int tiempo_alerta_ant = 0;
+//int estado_cinturon_conductor_ant = 0;
+//int estado_cinturon_acomp_ant = 0;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -196,30 +195,27 @@ void encender_apagar(String mensaje, int pin){
 
 // Valida si el conductor o el acompanante tienen el cinturon puesto
 void controlarCinturon(int peso_conductor, int peso_acompanante){
-	if(peso_conductor > 50){
-		volatile int estado_cinturon_conductor = digitalRead(cinturon_conductor);
-		if(estado_cinturon_conductor == 0 && estado_cinturon_conductor_ant != estado_cinturon_conductor){
-			client.publish("app/alerta","Conductor tiene colocado el cinturon");
-		} else if(estado_cinturon_conductor == 1 && estado_cinturon_conductor_ant != estado_cinturon_conductor){
+	volatile int estado_cinturon_conductor = digitalRead(cinturon_conductor);
+	volatile int estado_cinturon_acomp = digitalRead(cinturon_acompanante);
+
+	// Si hay conductor y acompañante con tiempo de la ultima publicacion mayor a 1 min
+	if(peso_conductor > 50 && peso_acompanante > 50){
+		if(estado_cinturon_conductor == 1 && estado_cinturon_acomp == 1){
+			client.publish("app/alerta","Conductor y Acompañante no tienen colocado el cinturon");
+		} else if(estado_cinturon_conductor == 0 && estado_cinturon_acomp == 1){
+			client.publish("app/alerta","Acompañante no tiene colocado el cinturon");
+		}else if (estado_cinturon_conductor == 1 && estado_cinturon_acomp == 0){ 
 			client.publish("app/alerta","Conductor no tiene colocado el cinturon");
-		}else if (controladorGeneral->getEstadoVehiculo() == 1 && estado_cinturon_conductor == 1 && tiempo - tiempo_alerta_conductor_ant > 60000){ 
+		}
+	// Si hay conductor y no hay acompañante con tiempo de la ultima publicacion mayor a 1 min
+	} else if(peso_conductor > 50 && peso_acompanante <= 50){
+		if(estado_cinturon_conductor == 1){
 			client.publish("app/alerta","Conductor no tiene colocado el cinturon");
-			tiempo_alerta_conductor_ant = tiempo;
-		}
-		estado_cinturon_conductor_ant = estado_cinturon_conductor;
+		} 
+		
 	}
-	if(peso_acompanante > 50){
-		volatile int estado_cinturon_acomp = digitalRead(cinturon_acompanante);
-		if(estado_cinturon_acomp == 0 && estado_cinturon_acomp_ant != estado_cinturon_acomp){
-			client.publish("app/alerta","Acompanante tiene colocado el cinturon");
-		} else if(estado_cinturon_acomp == 1 && estado_cinturon_acomp_ant != estado_cinturon_acomp){
-			client.publish("app/alerta","Acompanante no tiene colocado el cinturon");
-		} else if (controladorGeneral->getEstadoVehiculo() == 1 && estado_cinturon_acomp == 1 && tiempo - tiempo_alerta_acomp_ant > 60000){ 
-			client.publish("app/alerta","Acompanante no tiene colocado el cinturon");
-			tiempo_alerta_acomp_ant = tiempo;
-		}
-		estado_cinturon_acomp_ant = estado_cinturon_acomp;
-	}
+	//estado_cinturon_conductor_ant = estado_cinturon_conductor;
+	//estado_cinturon_acomp_ant = estado_cinturon_acomp;
 }
 
 // Se apagan sus luces asociadas
@@ -246,18 +242,21 @@ void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado
 		}
 	} else if (estado_giro_derecho_ant != estado_giro_der && estado_giro_der == 1 && estado_giro_izq == 0 && estado_baliza == 0){
 		encender_apagar("true", luz_giro_derecho);
-		client.publish("app/giroIzquierdo","0");
-		client.publish("app/giroDerecho","1");
+		// Descomentar luego de arreglar problema hw
+		//client.publish("app/giroIzquierdo","0");
+		//client.publish("app/giroDerecho","1");
 		estado_giro_derecho_ant = estado_giro_der;
 	} else if (estado_giro_izquierdo_ant != estado_giro_izq && estado_giro_der == 0 && estado_giro_izq == 1 && estado_baliza == 0){
 		encender_apagar("true", luz_giro_izquierdo);
-		client.publish("app/giroDerecho","0");
-		client.publish("app/giroIzquierdo","1");
+		// Descomentar luego de arreglar problema hw
+		//client.publish("app/giroDerecho","0");
+		//client.publish("app/giroIzquierdo","1");
 		estado_giro_izquierdo_ant = estado_giro_izq;
 	// Si la baliza y los guiños estan apagados, se apagan sus luces asociadas
 	} else if((estado_baliza == 0 && estado_giro_der == estado_giro_izq) && (estado_giro_izquierdo_ant != estado_giro_izq || estado_giro_derecho_ant != estado_giro_der)){
-		client.publish("app/giroDerecho","0");
-		client.publish("app/giroIzquierdo","0");
+		// Descomentar luego de arreglar problema hw
+		//client.publish("app/giroDerecho","0");
+		//client.publish("app/giroIzquierdo","0");
 		estado_giro_derecho_ant = estado_giro_der;
 		estado_giro_izquierdo_ant = estado_giro_izq;
 		apagarLuces();
@@ -325,7 +324,8 @@ void loop(){
 	}
 	tiempo = millis();
 
-	controladorGeneral->controlar_entrada(&topico_publicacion,&mensaje_publicacion);
+	// Descomentar luego de arreglar problema hw
+	//controladorGeneral->controlar_entrada(&topico_publicacion,&mensaje_publicacion);
 	/*if (client.connected() && !(mensaje_publicacion.equals(""))){
     	client.publish(topico_publicacion.c_str(),mensaje_publicacion.c_str());
 	}*/
@@ -343,21 +343,35 @@ void loop(){
 		digitalWrite(alarma,HIGH);
 	}
 
+	// Validacion de apertura de puertas
+	volatile int estado_puertas = digitalRead(puertas);
+	if(estado_puertas == 0){
+		digitalWrite(interior,LOW);
+		//client.publish("app/alerta","Puertas abiertas");
+	} else{
+		digitalWrite(interior,HIGH);
+		//client.publish("app/alerta","Puertas abiertas");
+	}
+
 	// En caso de que el auto no este encendido no se controla si el conductor tiene o no el cinturon puesto
 	//if(controladorGeneral->getEstadoVehiculo() == 1){
 		// Verificacion del asiento del conductor
 		isr_Interrupcion_Peso_Conductor();
 
-		// Verificacion del cinturon del conductor y del acompanante
-		controlarCinturon(estado_Peso_Conductor,estado_Peso_acompanante);
+		// Descomentar luego de arreglar problema hw
+		/*if(tiempo - tiempo_alerta_ant > 60000){
+			// Verificacion del cinturon del conductor y del acompanante
+			//controlarCinturon(estado_Peso_Conductor,estado_Peso_acompanante);
+
+			// Publico mensaje en caso de que arranque el auto y las puertas esten abiertas.
+			if(estado_puertas == 1){
+				client.publish("app/alerta","Puertas abiertas");
+			}
+			//tiempo_alerta_ant = tiempo;
+		}*/
+		
 	//}
 
-	// Validacion de apertura de puertas
-	if(digitalRead(puertas) == 0){
-		digitalWrite(interior,LOW);
-	} else{
-		digitalWrite(interior,HIGH);
-	}
 
 	// Valido si se presiono la bocina
 	if(controladorGeneral->getBocina() == 1){
