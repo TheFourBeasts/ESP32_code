@@ -12,21 +12,14 @@ ControladorGeneral::ControladorGeneral(){
     estado_alarma=0;
     baja=14;
     alta=27;
-    //interior=18;
     reflector=13;
-    //contacto=13;
  
-    pinMode(giro_derecho, INPUT);
-    pinMode(giro_izquierdo, INPUT);
-    //pinMode(posicion, OUTPUT);
+    pinMode(giro_derecho, INPUT_PULLDOWN);
+    pinMode(giro_izquierdo, INPUT_PULLDOWN);
     pinMode(baja, OUTPUT);
     pinMode(alta, OUTPUT);
-    //pinMode(interior, OUTPUT);
     pinMode(reflector, OUTPUT);
     pinMode(contacto, OUTPUT);
-
-    //Desactivo relé
-    digitalWrite(contacto,HIGH);
 }
 
 void ControladorGeneral::encenderBocina(String mensaje){
@@ -106,18 +99,11 @@ void ControladorGeneral::encender_apagar_baliza(String mensaje){
 }
 
 void ControladorGeneral::controlar_luces(String topico, String mensaje){
-        Serial.println(topico);
-        /*if(topico.equals("esp/luces/posicion")){
-            encenderVehiculo(mensaje);
-        } else */
         if (topico.equals("esp/luces/baja")){
             encender_apagar(mensaje, baja);
 
         } else if (topico.equals("esp/luces/alta")){
             encender_apagar(mensaje, alta);
-
-        //} else if (topico.equals("esp/luces/interior")){
-        //    encender_apagar(mensaje, interior);
 
         } else if (topico.equals("esp/luces/reflector")){
             encender_apagar(mensaje, reflector);
@@ -145,7 +131,6 @@ void ControladorGeneral::controlar_salida(char* topico, String mensaje){
         encenderVehiculo(mensaje);
 
     } else if (topic.equals("esp/bocina")){
-        Serial.println(mensaje);
         encenderBocina(mensaje);
     } 
      else if (topic.equals("esp/alarma")){
