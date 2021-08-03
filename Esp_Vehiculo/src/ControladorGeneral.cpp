@@ -91,8 +91,8 @@ void ControladorGeneral::encender_apagar_baliza(String mensaje){
 
         if(mensaje.equals("true")){
             baliza_encendida=1;
-            giro_der_encendido=0;
-            giro_izq_encendido=0; 
+            //giro_der_encendido=0;
+            //giro_izq_encendido=0; 
         } else {
             baliza_encendida=0;
         }

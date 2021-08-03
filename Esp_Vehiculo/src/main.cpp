@@ -5,8 +5,7 @@
 #include <PubSubClient.h>
 #include <Bocina.h>
 
-//RedWifi* wifi = new RedWifi("Redmi LM","lmuratore123");
-RedWifi* wifi = new RedWifi("Fibertel WiFi NUMERO 2","00416040571");
+RedWifi* wifi = new RedWifi("nombre_red","contraseña");
 ControladorGeneral* controladorGeneral = new ControladorGeneral();
 
 //Credenciales para el broker
@@ -44,8 +43,6 @@ volatile int estado_giro_izquierdo_ant = 0;
 volatile int tiempo_alerta_ant = 0;
 volatile int estado_cinturon_conductor = 0;
 volatile int estado_cinturon_acomp = 0;
-//int estado_cinturon_conductor_ant = 0;
-//int estado_cinturon_acomp_ant = 0;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -75,11 +72,9 @@ int estado_Peso_acompanante = 0;
  ******************************************************/
 uint16_t entrada;// =9.0;
 int value = 0;        //Definimos la variable
-//int value = 3240;       //Definimos la variable para hacer simulacion
 int contFor;
 uint16_t rafagaMuestras = 0;
 int estado_bat = 0;
-//int estado_bat = 100;   //Definimos la variable para hacer simulacion
 
 unsigned long initTime = 0;
 unsigned long finalTime = 0;
@@ -212,8 +207,6 @@ void controlarCinturon(int peso_conductor, int peso_acompanante){
 	} else if(peso_conductor > 50 && peso_acompanante <= 50 && estado_cinturon_conductor == 1){
 		client.publish("app/alerta","Conductor no tiene colocado el cinturon");
 	}
-	//estado_cinturon_conductor_ant = estado_cinturon_conductor;
-	//estado_cinturon_acomp_ant = estado_cinturon_acomp;
 }
 
 // Se apagan sus luces asociadas
@@ -238,56 +231,31 @@ void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado
 			digitalWrite(luz_giro_izquierdo,LOW);
 			estado = 0;
 		}
+		estado_giro_izquierdo_ant = 0;
+		estado_giro_derecho_ant = 0;
+	// Si la baliza y los guiños estan apagados, se apagan sus luces asociadas
 	} else if(((estado_baliza == 0 ) && estado_giro_izq == 0 && estado_giro_der == 0)){
-		// Descomentar luego de arreglar problema hw
-		client.publish("app/giroDerecho","0");
-		client.publish("app/giroIzquierdo","0");
-		estado_giro_derecho_ant = estado_giro_der;
-		estado_giro_izquierdo_ant = estado_giro_izq;
+		if(estado_giro_izquierdo_ant != estado_giro_izq || estado_giro_derecho_ant != estado_giro_der){
+			client.publish("app/giroDerecho","0");
+			client.publish("app/giroIzquierdo","0");
+		}
 		apagarLuces();
-	} else if (estado_giro_der == 1 && estado_giro_izq == 0 && estado_baliza == 0){
+	} else if (estado_giro_der == 1 && estado_giro_izq == 0 && estado_baliza == 0 && estado_giro_derecho_ant != 1){
 		encender_apagar("true", luz_giro_derecho);
-		// Descomentar luego de arreglar problema hw
+		encender_apagar("false", luz_giro_izquierdo);
 		client.publish("app/giroIzquierdo","0");
 		client.publish("app/giroDerecho","1");
 		estado_giro_derecho_ant = estado_giro_der;
 		estado_giro_izquierdo_ant = 0;
-		digitalWrite(luz_giro_izquierdo,LOW);
-	} else if (estado_giro_der == 0 && estado_giro_izq == 1 && estado_baliza == 0){
+	} else if (estado_giro_der == 0 && estado_giro_izq == 1 && estado_baliza == 0 && estado_giro_izquierdo_ant != 1){
 		encender_apagar("true", luz_giro_izquierdo);
-		// Descomentar luego de arreglar problema hw
+		encender_apagar("false", luz_giro_derecho);
 		client.publish("app/giroDerecho","0");
 		client.publish("app/giroIzquierdo","1");
-		estado_giro_izquierdo_ant = estado_giro_izq;
-		estado_giro_derecho_ant = 0;
 		digitalWrite(luz_giro_derecho,LOW);
+		estado_giro_derecho_ant = 0;
+		estado_giro_izquierdo_ant = estado_giro_izq;
 	}
-	
-	
-	
-	
-	
-	/*else if (estado_giro_derecho_ant != estado_giro_der && estado_giro_der == 1 && estado_giro_izq == 0 && estado_baliza == 0){
-		encender_apagar("true", luz_giro_derecho);
-		// Descomentar luego de arreglar problema hw
-		//client.publish("app/giroIzquierdo","0");
-		//client.publish("app/giroDerecho","1");
-		estado_giro_derecho_ant = estado_giro_der;
-	} else if (estado_giro_izquierdo_ant != estado_giro_izq && estado_giro_der == 0 && estado_giro_izq == 1 && estado_baliza == 0){
-		encender_apagar("true", luz_giro_izquierdo);
-		// Descomentar luego de arreglar problema hw
-		//client.publish("app/giroDerecho","0");
-		//client.publish("app/giroIzquierdo","1");
-		estado_giro_izquierdo_ant = estado_giro_izq;
-	// Si la baliza y los guiños estan apagados, se apagan sus luces asociadas
-	} else if(((estado_baliza == 0 ) && estado_giro_der == estado_giro_izq) && (estado_giro_izquierdo_ant != estado_giro_izq || estado_giro_derecho_ant != estado_giro_der)){
-		// Descomentar luego de arreglar problema hw
-		//client.publish("app/giroDerecho","0");
-		//client.publish("app/giroIzquierdo","0");
-		estado_giro_derecho_ant = estado_giro_der;
-		estado_giro_izquierdo_ant = estado_giro_izq;
-		apagarLuces();
-	}*/
 
 }
 
@@ -335,7 +303,7 @@ void setup() {
 	pinMode(interior, OUTPUT);
 	pinMode(puertas, INPUT);
 	pinMode(bocina, OUTPUT);
-	pinMode(cinturon_conductor, INPUT);
+	pinMode(cinturon_conductor, INPUT_PULLDOWN);
 	pinMode(cinturon_acompanante, INPUT_PULLDOWN);
 	pinMode(sensor_peso_acompanante, INPUT);
 	pinMode(sensor_peso_conductor, INPUT);
@@ -351,7 +319,6 @@ void loop(){
 	}
 	tiempo = millis();
 
-	// Descomentar luego de arreglar problema hw
 	controladorGeneral->controlar_entrada(&topico_publicacion,&mensaje_publicacion);
 	if (client.connected() && !(mensaje_publicacion.equals(""))){
     	client.publish(topico_publicacion.c_str(),mensaje_publicacion.c_str());
@@ -383,11 +350,12 @@ void loop(){
 		// Verificacion del asiento del conductor
 		isr_Interrupcion_Peso_Conductor();
 
-		// Descomentar luego de arreglar problema hw
-		if(tiempo - tiempo_alerta_ant > 10000){
-			// Verificacion del cinturon del conductor y del acompanante
-			estado_cinturon_conductor = digitalRead(cinturon_conductor);
-			estado_cinturon_acomp = digitalRead(cinturon_acompanante);
+		// Verificacion del cinturon del conductor y del acompanante
+		estado_cinturon_conductor = digitalRead(cinturon_conductor);
+		estado_cinturon_acomp = digitalRead(cinturon_acompanante);
+
+		if(tiempo - tiempo_alerta_ant > 30000){
+			
 			controlarCinturon(estado_Peso_Conductor,estado_Peso_acompanante);
 
 			// Publico mensaje en caso de que arranque el auto y las puertas esten abiertas.
@@ -402,7 +370,6 @@ void loop(){
 		estado_Peso_acompanante = 0;
 	}
 
-
 	// Valido si se presiono la bocina
 	if(controladorGeneral->getBocina() == 1){
 		sonarBocina();
@@ -410,11 +377,6 @@ void loop(){
 
 	// Envio el estado de la bateria cada 3 seg
 	if(tiempo-tiempo_bateria_ant > 3000){
-		/*if (value > 2820){
-			value = value-2;
-		} else {
-			value = 3230;
-		}*/
 
 		tiempo_bateria_ant = tiempo;
 
