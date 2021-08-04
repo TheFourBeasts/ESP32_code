@@ -238,6 +238,8 @@ void encenderBaliza(int estado_baliza,int tiempo, int estado_giro_der,int estado
 		if(estado_giro_izquierdo_ant != estado_giro_izq || estado_giro_derecho_ant != estado_giro_der){
 			client.publish("app/giroDerecho","0");
 			client.publish("app/giroIzquierdo","0");
+			estado_giro_izquierdo_ant = 0;
+			estado_giro_derecho_ant = 0;
 		}
 		apagarLuces();
 	} else if (estado_giro_der == 1 && estado_giro_izq == 0 && estado_baliza == 0 && estado_giro_derecho_ant != 1){
